@@ -11,6 +11,6 @@ public class Buff : ScriptableObject
     public int TurnDuration;
     public int MaxStack;
     
-    [SerializeReference] public List<Effect> Effects;
+    [SerializeReference] public List<BuffEffect> Effects;
     [SerializeReference] public List<ServerEffectBase> StartTurnEffects;
 }

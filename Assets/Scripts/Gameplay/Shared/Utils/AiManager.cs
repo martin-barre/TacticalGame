@@ -1,7 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
+using ZLinq;
 
 public static class AiManager
 {
@@ -9,7 +8,7 @@ public static class AiManager
     {
         IList<IAiAction> actions = GetBestActions(entity.Id, gameState, map);
         List<IPacket> packets = actions.SelectMany(a => a.Apply(gameState, map)).ToList();
-        packets.AddRange(GameServerAction.NextTurn(GameManagerServer.Instance.GameState));
+        packets.AddRange(GameServerAction.NextTurn(gameState, map));
         return packets;
     }
     
@@ -20,10 +19,9 @@ public static class AiManager
         List<AiActionMove> moveActions = GetAllMoveActions(entityId, gameState, map);
         foreach (AiActionMove moveAction in moveActions)
         {
-            GameState gameStateClone = gameState.Clone();
-            List<IPacket> movePackets = moveAction.Apply(gameStateClone, map);
+            List<IPacket> movePackets = moveAction.Apply(gameState, map);
             
-            int score = CalculScore(movePackets, entityId, gameStateClone, map);
+            int score = CalculScore(movePackets, entityId, gameState, map);
 
             if (score > bestActionsScore)
             {
@@ -32,12 +30,12 @@ public static class AiManager
                 bestActions.AddRange(new List<IAiAction> { moveAction });
             }
             
-            List<AiActionLaunchSpell> spellActions = GetAllSpellActions(entityId, gameStateClone, map);
+            List<AiActionLaunchSpell> spellActions = GetAllSpellActions(entityId, gameState, map);
             foreach (AiActionLaunchSpell aiActionLaunchSpell in spellActions)
             {
-                GameState gameStateClone2 = gameStateClone.Clone();
-                List<IPacket> spellPackets = aiActionLaunchSpell.Apply(gameStateClone2, map);
-                int score2 = CalculScore(movePackets.Concat(spellPackets), entityId, gameStateClone2, map);
+                List<IPacket> spellPackets = aiActionLaunchSpell.Apply(gameState, map);
+                
+                int score2 = CalculScore(movePackets.Concat(spellPackets), entityId, gameState, map);
 
                 if (score2 > bestActionsScore)
                 {
@@ -45,7 +43,10 @@ public static class AiManager
                     bestActions.Clear();
                     bestActions.AddRange(new List<IAiAction> { moveAction, aiActionLaunchSpell });
                 }
+                
+                spellPackets.ForEach(spellPacket => spellPacket.Undo(gameState, map));
             }
+            movePackets.ForEach(movePacket => movePacket.Undo(gameState, map));
         }
 
         return bestActions;
@@ -69,6 +70,7 @@ public static class AiManager
         }
 
         int minDistance = gameState.Entities
+            .AsValueEnumerable()
             .Where(e => e.Team != entity.Team)
             .Select(e => BFS.GetPath(entity.GridPosition, e.GridPosition, gameState, map, true))
             .Where(path => path != null)
@@ -95,8 +97,10 @@ public static class AiManager
     {
         Entity entity = gameState.GetEntityById(entityId);
         return entity.Race.Spells
+            .AsValueEnumerable()
             .Where(s => entity.Pa >= s.paCost)
             .SelectMany(s => FOV.GetDisplacement(entity, s, gameState, map)
+                .AsValueEnumerable()
                 .Select(n => new AiActionLaunchSpell { SpellId = s.Id, GridPosition = n.GridPosition }))
             .ToList();
     }

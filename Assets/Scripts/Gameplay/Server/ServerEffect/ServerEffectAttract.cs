@@ -27,7 +27,7 @@ public class ServerEffectAttract : ServerEffectBase
             Vector2Int direction = Utils.GridDirection(targetPosition, launcherPosition);
             bool isDiagonal = Mathf.Abs(direction.x) + Mathf.Abs(direction.y) == 2;
 
-            Node node = null;
+            Node node = Node.Invalid;
             for (int i = 1; i <= nbOfTile; i++)
             {
                 Node tmp = map.GetNode(targetPosition + direction * i);
@@ -44,10 +44,16 @@ public class ServerEffectAttract : ServerEffectBase
                 node = tmp;
             }
 
-            if (node != null && node.GridPosition != entity.GridPosition)
+            if (node.NodeType != NodeType.Invalid && node.GridPosition != entity.GridPosition)
             {
-                gameState.MoveOrSwapEntity(entity, node.GridPosition);
-                clientEffects.Add(new PacketMove(entity.Id, 0, new []{ node.GridPosition }));
+                PacketMove packetMove = new()
+                {
+                    TargetId = entity.Id,
+                    PmCost = 0,
+                    Path = new[] { node.GridPosition }
+                };
+                packetMove.Apply(gameState, map);
+                clientEffects.Add(packetMove);
             }
         }
 

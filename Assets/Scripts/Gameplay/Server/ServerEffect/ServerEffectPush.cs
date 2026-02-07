@@ -18,7 +18,7 @@ public class ServerEffectPush : ServerEffectBase
 
     public override List<IPacket> Apply(Entity launcher, List<Entity> entities, Vector2Int targetPos, GameState gameState, Map map)
     {
-        List<IPacket> clientEffects = new();
+        List<IPacket> packets = new();
         List<Entity> filteredEntities = GetFilteredEntities(launcher, entities);
         
         Vector2Int launcherPosition = centerPoint == CenterPoint.LAUNCHER ? launcher.GridPosition : targetPos;
@@ -29,7 +29,7 @@ public class ServerEffectPush : ServerEffectBase
             Vector2Int direction = Utils.GridDirection(launcherPosition, targetPosition);
             bool isDiagonal = Mathf.Abs(direction.x) + Mathf.Abs(direction.y) == 2;
 
-            Node node = null;
+            Node node = Node.Invalid;
             for (int i = 1; i <= nbOfTile; i++)
             {
                 Node tmp = map.GetNode(targetPosition + direction * i);
@@ -46,13 +46,19 @@ public class ServerEffectPush : ServerEffectBase
                 node = tmp;
             }
 
-            if (node != null && node.GridPosition != entity.GridPosition)
+            if (node.NodeType != NodeType.Invalid && node.GridPosition != entity.GridPosition)
             {
-                clientEffects.Add(new PacketMove(entity.Id, 0, new []{ node.GridPosition }));
-                gameState.MoveOrSwapEntity(entity, node.GridPosition);
+                PacketMove packetMove = new()
+                {
+                    TargetId = entity.Id,
+                    PmCost = 0,
+                    Path = new[] { node.GridPosition }
+                };
+                packetMove.Apply(gameState, map);
+                packets.Add(packetMove);
             }
         }
 
-        return clientEffects;
+        return packets;
     }
 }

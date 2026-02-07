@@ -2,14 +2,22 @@ using UnityEngine;
 
 public enum NodeType : byte
 {
+    Invalid,
     Empty,
     Ground,
     Wall
 }
 
-public class Node
+public readonly struct Node
 {
-    public Vector2Int GridPosition { get; set; }
-    public Vector3 WorldPosition { get; set; }
-    public NodeType NodeType { get; set; }
+    public static readonly Node Invalid = new(Vector2Int.zero, NodeType.Invalid);
+    
+    public readonly Vector2Int GridPosition;
+    public readonly NodeType NodeType;
+
+    public Node(Vector2Int gridPosition, NodeType nodeType)
+    {
+        GridPosition = gridPosition;
+        NodeType = nodeType;
+    }
 }

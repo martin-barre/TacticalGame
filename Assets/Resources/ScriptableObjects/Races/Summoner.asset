@@ -20,8 +20,8 @@ MonoBehaviour:
   Pa: 9
   Pm: 3
   Spells:
-  - {fileID: 11400000, guid: 00bfc6ed86bd8e549b24ee950e77b118, type: 2}
-  - {fileID: 11400000, guid: ddba45de40fba3749b1728bd3d92a343, type: 2}
-  - {fileID: 11400000, guid: 56231e91047f9b34d9f9250e17c0fe2b, type: 2}
-  - {fileID: 11400000, guid: e824f68678319f2408e551969b9399a2, type: 2}
+  - {fileID: 11400000, guid: fc9e0467f704aae48b04492b30050351, type: 2}
+  - {fileID: 11400000, guid: b1048c99dd43ecc4a9b744a7568db605, type: 2}
+  - {fileID: 11400000, guid: 0d130f788dbcdaf43ac04d316ce3604e, type: 2}
+  - {fileID: 11400000, guid: 57838f36a3f209847ad86881bec1604f, type: 2}
   AiEnum: 1

@@ -6,6 +6,9 @@ public class TimelineEntityUI : MonoBehaviour
 {
     [SerializeField] private Image imgEntity;
     [SerializeField] private Slider sliderHealth;
+    [SerializeField] private Image imgSlider;
+    [SerializeField] private Color redColor;
+    [SerializeField] private Color blueColor;
 
     private EntityViewModel _entityViewModel;
 
@@ -26,6 +29,7 @@ public class TimelineEntityUI : MonoBehaviour
         imgEntity.sprite = entity.Race.IconSprite;
         imgEntity.enabled = entity.Race != null;
         sliderHealth.maxValue = entity.Race.Hp;
+        imgSlider.color = entity.Team == Team.Red ? Color.red : Color.blue;
         UpdateHp(entity.Hp);
     }
     

@@ -10,7 +10,7 @@ public class ServerEffectBuff : ServerEffectBase
 
     public override List<IPacket> Apply(Entity launcher, List<Entity> entities, Vector2Int targetPos, GameState gameState, Map map)
     {
-        List<IPacket> clientEffects = new();
+        List<IPacket> packets = new();
         List<Entity> filteredEntities = GetFilteredEntities(launcher, entities);
         
         foreach (Entity entity in filteredEntities)
@@ -18,16 +18,17 @@ public class ServerEffectBuff : ServerEffectBase
             // Test if the buff can be added
             if (entity.Buffs.Count(b => b.Buff.Id == buff.Id) < buff.MaxStack)
             {
-                entity.Buffs.Add(new ActiveBuff
+                PacketBuff packetBuff = new()
                 {
-                    Buff = buff,
-                    TurnDuration = buff.TurnDuration,
-                    Launcher = launcher
-                });
-                clientEffects.Add(new PacketBuff(entity.Id, launcher.Id, buff.Id));
+                    TargetId = entity.Id,
+                    LauncherId = launcher.Id,
+                    BuffId = buff.Id
+                };
+                packetBuff.Apply(gameState, map);
+                packets.Add(packetBuff);
             }
         }
 
-        return clientEffects.ToList();
+        return packets;
     }
 }

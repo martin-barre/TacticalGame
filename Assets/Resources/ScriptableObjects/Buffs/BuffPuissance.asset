@@ -21,13 +21,13 @@ MonoBehaviour:
   TurnDuration: 2
   MaxStack: 1
   Effects:
-  - rid: 3082811418379812949
+  - rid: 5648573414298353747
   StartTurnEffects: []
   references:
     version: 2
     RefIds:
-    - rid: 3082811418379812949
-      type: {class: AddStatsEffect, ns: , asm: Assembly-CSharp}
+    - rid: 5648573414298353747
+      type: {class: BuffEffectAddStats, ns: , asm: Assembly-CSharp}
       data:
         Stats: 2
-        Value: 20
+        Value: 12

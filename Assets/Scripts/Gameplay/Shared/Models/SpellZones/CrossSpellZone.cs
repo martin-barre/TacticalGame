@@ -1,18 +1,22 @@
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine;
 
 [Serializable]
 public class CrossSpellZone : SpellZone
 {
-    public override List<Vector2Int> GetZonePositions(Vector2Int launcherGridPosition, Vector2Int targetGridPosition)
+    public override List<Vector2Int> GetZonePositions(Vector2Int launcherPosition, Vector2Int targetPosition)
     {
         return GetPositionCross();
     }
 
     private List<Vector2Int> GetPositionCross()
     {
-        List<Vector2Int> positions = new() { new Vector2Int(0, 0) };
+        List<Vector2Int> positions = new(1 + 4 * (size - 1))
+        {
+            Vector2Int.zero
+        };
         for (int i = 1; i < size; i++)
         {
             positions.Add(new Vector2Int(i, 0));

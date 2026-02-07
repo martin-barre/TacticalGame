@@ -2,10 +2,10 @@ using System;
 
 
 [Serializable]
-public abstract class Effect {}
+public abstract class BuffEffect {}
 
 [Serializable]
-public class AddStatsEffect : Effect
+public class BuffEffectAddStats : BuffEffect
 {
     public Stats Stats;
     public int Value;

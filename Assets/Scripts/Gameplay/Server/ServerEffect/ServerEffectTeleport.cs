@@ -9,15 +9,20 @@ public class ServerEffectTeleport : ServerEffectBase
 
     public override List<IPacket> Apply(Entity launcher, List<Entity> entities, Vector2Int targetPos, GameState gameState, Map map)
     {
-        List<IPacket> clientEffects = new();
+        List<IPacket> packets = new();
         Node node = map.GetNode(targetPos);
         
         if (!canSwap && gameState.GetEntityByGridPosition(node.GridPosition) != null)
-            return clientEffects;
+            return packets;
+
+        PacketTeleport packetTeleport = new()
+        {
+            TargetId = launcher.Id,
+            GridPosition = targetPos
+        };
+        packetTeleport.Apply(gameState, map);
+        packets.Add(packetTeleport);
         
-        gameState.MoveOrSwapEntity(launcher, targetPos);
-        clientEffects.Add(new PacketTeleport(launcher.Id, targetPos));
-        
-        return clientEffects;
+        return packets;
     }
 }

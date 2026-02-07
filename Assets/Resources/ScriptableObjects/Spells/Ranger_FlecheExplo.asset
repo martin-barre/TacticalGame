@@ -23,7 +23,9 @@ MonoBehaviour:
   poMax: 8
   zone:
     rid: 3082811418379812958
-  sfx: []
+  sfx:
+  - target: 1
+    prefab: {fileID: 6599497159718569191, guid: 52193a661e36f4f46b3e9a4c91dc64c2, type: 3}
   effects:
   - rid: 161247212505661557
   references:
@@ -43,4 +45,4 @@ MonoBehaviour:
       type: {class: CircleSpellZone, ns: , asm: Assembly-CSharp}
       data:
         size: 2
-        fill: 1
+        fill: 0

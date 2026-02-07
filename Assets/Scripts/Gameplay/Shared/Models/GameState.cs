@@ -3,7 +3,7 @@ using System.Linq;
 using JetBrains.Annotations;
 using UnityEngine;
 
-public class GameState
+public sealed class GameState
 {
     public bool IsStarted;
     public int CurrentEntityIndex;

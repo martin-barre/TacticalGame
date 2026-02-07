@@ -256,6 +256,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   imgEntity: {fileID: 7683814539039018129}
   sliderHealth: {fileID: 8229643790227334313}
+  imgSlider: {fileID: 2327002057960344076}
+  redColor: {r: 0.7254902, g: 0.20392157, b: 0.20392157, a: 1}
+  blueColor: {r: 0.20392157, g: 0.4627451, b: 0.7254902, a: 1}
 --- !u!222 &2542291765839973911
 CanvasRenderer:
   m_ObjectHideFlags: 0

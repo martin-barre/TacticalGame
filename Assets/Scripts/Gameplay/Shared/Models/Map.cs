@@ -11,25 +11,27 @@ public class Map
     public int Width;
     public int Height;
     
-    [CanBeNull]
     public Node GetNode(Vector2Int gridPosition)
     {
-        if (gridPosition.x < 0 || gridPosition.x >= Width || gridPosition.y < 0 || gridPosition.y >= Height) return null;
+        if (gridPosition.x < 0 || gridPosition.x >= Width || gridPosition.y < 0 || gridPosition.y >= Height) return Node.Invalid;
         return Grid[gridPosition.x + gridPosition.y * Width];
     }
     
-    [CanBeNull]
     public Node GetNode(int cellId)
     {
-        if (cellId < 0 || cellId >= Grid.Length) return null;
+        if (cellId < 0 || cellId >= Grid.Length) return Node.Invalid;
         return Grid[cellId];
     }
     
-    [CanBeNull]
     public Node GetNode(Vector3 worldPosition)
     {
         Vector2Int gridPosition = MapManager.Instance.WorlPositionToGridPosition(worldPosition);
         return GetNode(gridPosition);
+    }
+    
+    public Vector2Int GetGridPosition(Vector3 worldPosition)
+    {
+        return MapManager.Instance.WorlPositionToGridPosition(worldPosition);
     }
     
     public bool IsWalkable(Vector2Int gridPosition)

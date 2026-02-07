@@ -22,7 +22,7 @@ MonoBehaviour:
   poMin: 1
   poMax: 5
   zone:
-    rid: 3082811418379812959
+    rid: 5436131074119565393
   sfx: []
   effects:
   - rid: 161247212505661556
@@ -39,7 +39,8 @@ MonoBehaviour:
         damageMin: 14
         damageMax: 18
         isLifeSteal: 0
-    - rid: 3082811418379812959
-      type: {class: CrossSpellZone, ns: , asm: Assembly-CSharp}
+    - rid: 5436131074119565393
+      type: {class: CircleSpellZone, ns: , asm: Assembly-CSharp}
       data:
         size: 1
+        fill: 1

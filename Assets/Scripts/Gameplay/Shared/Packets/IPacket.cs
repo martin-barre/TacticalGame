@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using MessagePack;
 
 [Union(0, typeof(PacketBuff))]
@@ -9,10 +8,10 @@ using MessagePack;
 [Union(5, typeof(PacketMove))]
 [Union(6, typeof(PacketNextTurn))]
 [Union(7, typeof(PacketSetGameLogic))]
-[Union(8, typeof(PacketSetTeam))]
-[Union(9, typeof(PacketSummonEntity))]
-[Union(10, typeof(PacketTeleport))]
+[Union(8, typeof(PacketSummonEntity))]
+[Union(9, typeof(PacketTeleport))]
 public interface IPacket
 {
-    Task ApplyAsync();
+    public void Apply(GameState state, Map map);
+    public void Undo(GameState state, Map map);
 }

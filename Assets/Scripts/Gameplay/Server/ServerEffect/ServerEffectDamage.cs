@@ -13,9 +13,9 @@ public class ServerEffectDamage : ServerEffectBase
 
     public override List<IPacket> Apply(Entity launcher, List<Entity> entities, Vector2Int targetPos, GameState gameState, Map map)
     {
-        List<IPacket> clientEffects = new();
+        List<IPacket> packets = new();
         List<Entity> filteredEntities = GetFilteredEntities(launcher, entities);
-        List<AddStatsEffect> launcherEffects = launcher.Buffs.SelectMany(b => b.Buff.Effects).OfType<AddStatsEffect>().ToList();
+        List<BuffEffectAddStats> launcherEffects = launcher.Buffs.SelectMany(b => b.Buff.Effects).OfType<BuffEffectAddStats>().ToList();
         
         foreach (Entity entity in filteredEntities)
         {
@@ -24,13 +24,23 @@ public class ServerEffectDamage : ServerEffectBase
             damage += launcherEffects.Where(b => b.Stats == Stats.DAMAGE_FLAT).Sum(b => b.Value);
             damage = Mathf.Min(damage, entity.Hp);
 
-            entity.Hp -= damage;
-            clientEffects.Add(new PacketDamage(entity.Id, damage));
+            PacketDamage packetDamage = new()
+            {
+                TargetId = entity.Id,
+                Value = damage
+            };
+            packetDamage.Apply(gameState, map);
+            packets.Add(packetDamage);
 
             if (isLifeSteal)
             {
-                launcher.Hp += damage / 2;
-                clientEffects.Add(new PacketHeal(launcher.Id, damage / 2));
+                PacketHeal packetHeal = new()
+                {
+                    TargetId = launcher.Id,
+                    Value = damage / 2
+                };
+                packetHeal.Apply(gameState, map);
+                packets.Add(packetHeal);
             }
         }
 
@@ -38,10 +48,10 @@ public class ServerEffectDamage : ServerEffectBase
         {
             if (entity.Hp <= 0)
             {
-                clientEffects.AddRange(GameManagerServer.Instance.KillEntity(entity, gameState));
+                packets.AddRange(GameManagerServer.Instance.KillEntity(entity, gameState));
             }
         }
 
-        return clientEffects.ToList();
+        return packets;
     }
 }

@@ -74,18 +74,30 @@ public class GameManagerServer : MonoSingleton<GameManagerServer>
         List<IPacket> effects = new();
         foreach (Entity entity in GameState.Entities)
         {
-            effects.Add(new PacketSummonEntity(
-                entity.Id,
-                entity.Team,
-                entity.Race.Id,
-                entity.GridPosition,
-                entity.IsPlayer,
-                entity.Summoner?.Id ?? -1));
+            PacketSummonEntity packetSummonEntity = new()
+            {
+                EntityId = entity.Id,
+                Team = entity.Team,
+                RaceId = entity.Race.Id,
+                GridPosition = entity.GridPosition,
+                IsPlayer = entity.IsPlayer,
+                SummonerId = entity.Summoner?.Id ?? -1
+            };
+            effects.Add(packetSummonEntity);
         }
-        effects.Add(new PacketSetTeam(sessionData.Value.Team));
-        effects.Add(new PacketSetGameLogic(GameState.IsStarted, GameState.CurrentEntityIndex));
 
-        ActionResultSender.Instance.SendEffectsClientRpc(MessagePackSerializer.Serialize(effects), new ClientRpcParams 
+        PacketSetGameLogic packetSetGameLogic = new()
+        {
+            IsStarted = GameState.IsStarted,
+            CurrentPlayer = GameState.CurrentEntityIndex
+        };
+        effects.Add(packetSetGameLogic);
+        
+        ActionResultSender.Instance.SendPacketsClientRpc(MessagePackSerializer.Serialize(effects), new ClientRpcParams 
+        {
+            Send = new ClientRpcSendParams { TargetClientIds = new[] { clientId } }
+        });
+        ActionResultSender.Instance.SendTeamClientRpc(sessionData.Value.Team, new ClientRpcParams 
         {
             Send = new ClientRpcSendParams { TargetClientIds = new[] { clientId } }
         });
@@ -93,59 +105,35 @@ public class GameManagerServer : MonoSingleton<GameManagerServer>
 
     public PacketSummonEntity? SpawnEntity(Team team, int raceId, Vector2Int gridPosition, bool isPlayer, GameState gameState, Entity summoner = null)
     {
-        Race race = RaceDatabase.GetById(raceId);
         Node node = Map.GetNode(gridPosition);
 
         if (node.NodeType != NodeType.Ground || gameState.GetEntityByGridPosition(node.GridPosition) != null) return null;
-        
-        Entity entity = new()
-        {
-            Id = BitConverter.ToInt32(Guid.NewGuid().ToByteArray(), 0),
-            Team = team,
-            GridPosition = gridPosition,
-            Race = race,
-            Hp = race.Hp,
-            Pa = race.Pa,
-            Pm = race.Pm,
-            IsPlayer = isPlayer,
-            Summoner = summoner
-        };
-        
-        if (entity.Summoner != null)
-        {
-            gameState.Entities.Insert(gameState.CurrentEntityIndex + 1, entity);
-        }
-        else
-        {
-            gameState.Entities.Add(entity);
-        }
 
-        return new PacketSummonEntity(
-            entity.Id,
-            team,
-            race.Id,
-            gridPosition,
-            isPlayer,
-            summoner?.Id ?? -1);
+        PacketSummonEntity packetSummonEntity = new()
+        {
+            EntityId = BitConverter.ToInt32(Guid.NewGuid().ToByteArray(), 0),
+            Team = team,
+            RaceId = raceId,
+            GridPosition = gridPosition,
+            IsPlayer = isPlayer,
+            SummonerId = summoner?.Id ?? -1
+        };
+        packetSummonEntity.Apply(GameState, Map);
+
+        return packetSummonEntity;
     }
     
     public IList<IPacket> KillEntity(Entity entity, GameState gameState)
     {
         List<IPacket> packets = new();
-        
-        if (gameState.CurrentEntityIndex >= gameState.Entities.IndexOf(entity))
-        {
-            gameState.CurrentEntityIndex--;
-        }
-        
-        gameState.Entities.ForEach(e => e.Buffs.RemoveAll(b => b.Launcher.Id == entity.Id));
-        gameState.Entities.Remove(entity);
 
-        packets.Add(new PacketKillEntity(entity.Id));
+        PacketKillEntity packetKillEntity = new() { TargetId = entity.Id };
+        packetKillEntity.Apply(GameState, Map);
+        packets.Add(packetKillEntity);
 
         if (entity == gameState.CurrentEntity)
         {
-            packets.AddRange(GameServerAction.NextTurn(GameState));
+            packets.AddRange(GameServerAction.NextTurn(GameState, Map));
         }
 
         return packets;
@@ -160,8 +148,8 @@ public class GameManagerServer : MonoSingleton<GameManagerServer>
     {
         while(!GameState.CurrentEntity.IsPlayer)
         {
-            List<IPacket> clientEffects = AiManager.PlayOnAction(GameState.CurrentEntity, GameState, Map);
-            ActionResultSender.Instance.SendEffectsClientRpc(MessagePackSerializer.Serialize(clientEffects));
+            List<IPacket> clientEffects = AiManagerV2.PlayOnAction(GameState.CurrentEntity, GameState, Map, AiManagerV2.AiBehaviorType.Aggressive);
+            ActionResultSender.Instance.SendPacketsClientRpc(MessagePackSerializer.Serialize(clientEffects));
             yield return null;
         }
     }

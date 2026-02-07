@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-[CustomPropertyDrawer(typeof(Effect), true)]
+[CustomPropertyDrawer(typeof(BuffEffect), true)]
 public class EffectDrawer : PropertyDrawer
 {
     private static Dictionary<string, Type> _typeMap;
@@ -58,7 +58,7 @@ public class EffectDrawer : PropertyDrawer
 
     private static void BuildTypeMap()
     {
-        Type baseType = typeof(Effect);
+        Type baseType = typeof(BuffEffect);
         _typeMap = AppDomain.CurrentDomain.GetAssemblies()
             .SelectMany(asm =>
             {

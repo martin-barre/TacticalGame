@@ -94,7 +94,7 @@ public static class FOV
                 // DESACTIVE LA CASE CAR ELLE N'EST PAS VISIBLE
                 bool active = !(angle < angleMin || angle > angleMax);
 
-                if (node == null || node.NodeType == NodeType.Wall || gameState.GetEntityByGridPosition(node.GridPosition) != null)
+                if (node.NodeType is NodeType.Invalid or NodeType.Wall || gameState.GetEntityByGridPosition(node.GridPosition) != null)
                 {
                     if (!blocked)
                     {
@@ -158,7 +158,7 @@ public static class FOV
             {
                 Node node = map.GetNode(entity.GridPosition + direction * i);
 
-                if (node is { NodeType: NodeType.Ground } && i >= spell.poMin && i <= spell.poMax)
+                if (node.NodeType is NodeType.Ground && i >= spell.poMin && i <= spell.poMax)
                 {
                     if (!spell.canLaunchOnEntity && gameState.GetEntityByGridPosition(node.GridPosition) != null) continue;
                     nodes.Add(node);
@@ -166,7 +166,7 @@ public static class FOV
 
                 if (!spell.xRay)
                 {
-                    if (node is { NodeType: NodeType.Wall } || (node != null && gameState.GetEntityByGridPosition(node.GridPosition) != null))
+                    if (node.NodeType is NodeType.Wall || (node.NodeType != NodeType.Invalid && gameState.GetEntityByGridPosition(node.GridPosition) != null))
                     {
                         break;
                     }
@@ -194,13 +194,13 @@ public static class FOV
                 int realY = entity.GridPosition.y + i * direction.y;
                 Node node = map.GetNode(Vector2Int.CeilToInt(new Vector2(realX, realY)));
 
-                if (node != null && node.NodeType == NodeType.Ground && i >= spell.poMin && i <= spell.poMax)
+                if (node.NodeType == NodeType.Ground && i >= spell.poMin && i <= spell.poMax)
                 {
                     if (!spell.canLaunchOnEntity && gameState.GetEntityByGridPosition(node.GridPosition) != null) continue;
                     nodes.Add(node);
                 }
 
-                if (!spell.xRay && (node == null || node.NodeType == NodeType.Wall || gameState.GetEntityByGridPosition(node.GridPosition) != null))
+                if (!spell.xRay && (node.NodeType is NodeType.Invalid or NodeType.Wall || gameState.GetEntityByGridPosition(node.GridPosition) != null))
                 {
                     break;
                 }

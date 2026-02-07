@@ -13,10 +13,23 @@ public class GameManagerClient : MonoSingleton<GameManagerClient>
     public Map Map;
     public Team Team;
     
+    public readonly PacketRendererRegistry PacketRendererRegistry = new();
+    
     private readonly Dictionary<int, EntityPrefabController> _entitiesPrefabs = new();
-
+    
     private void Awake()
     {
+        PacketRendererRegistry.Register(new PacketRendererBuff());
+        PacketRendererRegistry.Register(new PacketRendererDamage());
+        PacketRendererRegistry.Register(new PacketRendererHeal());
+        PacketRendererRegistry.Register(new PacketRendererKillEntity());
+        PacketRendererRegistry.Register(new PacketRendererLaunchSpell());
+        PacketRendererRegistry.Register(new PacketRendererMove());
+        PacketRendererRegistry.Register(new PacketRendererNextTurn());
+        PacketRendererRegistry.Register(new PacketRendererSetGameLogic());
+        PacketRendererRegistry.Register(new PacketRendererSummonEntity());
+        PacketRendererRegistry.Register(new PacketRendererTeleport());
+            
         MapManager.Instance.InitializeMap();
         Map = MapManager.Instance.GetMap();
         GameState = new GameState
@@ -33,36 +46,11 @@ public class GameManagerClient : MonoSingleton<GameManagerClient>
         ActionRequestSender.Instance.NotifyClientReadyServerRpc();
     }
 
-    public void SpawnEntity(int entityId, Team team, int raceId, Vector2Int gridPosition, bool isPlayer, int summonerId = -1)
+    public void SpawnEntity(int entityId, int raceId, Vector2Int gridPosition)
     {
         Race race = RaceDatabase.GetById(raceId);
-        Node node = Map.GetNode(gridPosition);
-
-        if (node.NodeType != NodeType.Ground || GameState.GetEntityByGridPosition(node.GridPosition) != null) return;
-        
-        Entity entity = new()
-        {
-            Id = entityId,
-            Team = team,
-            GridPosition = gridPosition,
-            Race = race,
-            Hp = race.Hp,
-            Pa = race.Pa,
-            Pm = race.Pm,
-            IsPlayer = isPlayer,
-            Summoner = summonerId == -1 ? null : GameState.GetEntityById(summonerId)
-        };
-        
-        if (entity.Summoner != null)
-        {
-            GameState.Entities.Insert(GameState.CurrentEntityIndex + 1, entity);
-        }
-        else
-        {
-            GameState.Entities.Add(entity);
-        }
         ViewModelFactory.Game.NotifyUpdate(GameState);
-        EntityPrefabController prefab = Instantiate(entity.Race.Prefab, node.WorldPosition, Quaternion.identity);
+        EntityPrefabController prefab = Instantiate(race.Prefab, MapManager.Instance.GridPositionToWorlPosition(gridPosition), Quaternion.identity);
         _entitiesPrefabs.Add(entityId, prefab);
     }
     

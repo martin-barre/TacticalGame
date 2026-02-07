@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -41,17 +43,9 @@ public class MapManager : MonoSingleton<MapManager>
                 else if (currentTile.Equals(groundTile)) type = NodeType.Ground;
                 else if (currentTile.Equals(wallTile)) type = NodeType.Wall;
 
-                Vector2Int gridPosition = Vector2Int.CeilToInt(new Vector2(x - _bounds.xMin, y - _bounds.yMin));
-                Vector3 worldPosition = tilemapCollider.GetCellCenterLocal(Vector3Int.CeilToInt(new Vector3(x, y)));
-
                 int gridX = x - _bounds.xMin;
                 int gridY = y - _bounds.yMin;
-                _map.Grid[gridX + gridY * _map.Width] = new Node
-                {
-                    GridPosition = gridPosition,
-                    WorldPosition = worldPosition,
-                    NodeType = type
-                };
+                _map.Grid[gridX + gridY * _map.Width] = new Node(new Vector2Int(gridX, gridY), type);
             }
         }
 
@@ -96,7 +90,7 @@ public class MapManager : MonoSingleton<MapManager>
 
     public Vector3 GridPositionToWorlPosition(Vector2Int gridPosition)
     {
-        return tilemapSpawns.GetCellCenterLocal(Vector3Int.CeilToInt(new Vector3(gridPosition.x, gridPosition.y)));
+        return tilemapSpawns.GetCellCenterLocal(Vector3Int.CeilToInt(new Vector3(gridPosition.x + _bounds.xMin, gridPosition.y + _bounds.yMin)));
     }
     
     public Vector2Int WorlPositionToGridPosition(Vector3 worldPosition)

@@ -1,3 +1,3 @@
 # TurnBasedGame
 
-![](demo.gif)
+![](demo.mp4)

@@ -10,7 +10,7 @@ public class ServerEffectSummon : ServerEffectBase
 
     public override List<IPacket> Apply(Entity launcher, List<Entity> entities, Vector2Int targetPos, GameState gameState, Map map)
     {
-        List<IPacket> clientEffects = new ();
+        List<IPacket> packets = new ();
 
         Node node = map.GetNode(targetPos);
         if (node.NodeType == NodeType.Ground && gameState.GetEntityByGridPosition(node.GridPosition) == null)
@@ -18,10 +18,10 @@ public class ServerEffectSummon : ServerEffectBase
             PacketSummonEntity? summonedEntity = GameManagerServer.Instance.SpawnEntity(launcher.Team, Race.Id, targetPos, launcher.IsPlayer, gameState, launcher);
             if (summonedEntity.HasValue)
             {
-                clientEffects.Add(summonedEntity.Value);
+                packets.Add(summonedEntity.Value);
             }
         }
 
-        return clientEffects.ToList();
+        return packets.ToList();
     }
 }

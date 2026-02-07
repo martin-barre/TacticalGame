@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using ZLinq;
 
 [Serializable]
 public class SFX
@@ -33,35 +34,40 @@ public class Spell : ScriptableObject
     public List<SFX> sfx;
     [SerializeReference] public List<ServerEffectBase> effects;
 
-    public List<Node> GetZoneNodes(Vector2Int launcherGridPosition, Vector2Int targetGridPosition, Map map)
+    public List<Node> GetZoneNodes(Vector2Int launcherPosition, Vector2Int targetPosition, Map map)
     {
-        return zone.GetZonePositions(launcherGridPosition, targetGridPosition)
-            .Select(position => map.GetNode(targetGridPosition + position))
-            .Where(node => node is { NodeType: NodeType.Ground })
+        return zone.GetZonePositions(launcherPosition, targetPosition)
+            .AsValueEnumerable()
+            .Select(position => map.GetNode(targetPosition + position))
+            .Where(node => node.NodeType == NodeType.Ground)
+            .ToList();
+    }
+    
+    public List<Vector2Int> GetZonePositions(Vector2Int launcherPosition, Vector2Int targetPosition, Map map)
+    {
+        return zone.GetZonePositions(launcherPosition, targetPosition)
+            .AsValueEnumerable()
+            .Where(position => map.GetNode(targetPosition + position).NodeType == NodeType.Ground)
             .ToList();
     }
 
-    public List<Entity> GetTouchedEntities(Vector2Int launcherGridPosition, Vector2Int targetGridPosition, GameState gameState, Map map)
+    public List<Entity> GetTouchedEntities(Vector2Int launcherPosition, Vector2Int targetPosition, GameState gameState, Map map)
     {
-        return GetZoneNodes(launcherGridPosition, targetGridPosition, map)
-            .Select(node => gameState.GetEntityByGridPosition(node.GridPosition))
-            .Where(entity => entity != null)
+        return zone.GetZonePositions(launcherPosition, targetPosition)
+            .AsValueEnumerable()
+            .Select(position => gameState.GetEntityByGridPosition(targetPosition + position))
+            .Where(e => e != null)
             .ToList();
     }
 
-    public List<IPacket> Launch(Entity launcher, Spell spell, Vector2Int targetGridPosition, GameState gameState, Map map)
+    public List<IPacket> Launch(Entity launcher, Vector2Int targetGridPosition, GameState gameState, Map map)
     {
-        List<Entity> entities = GetZoneNodes(launcher.GridPosition, targetGridPosition, map)
-            .Select(node => gameState.GetEntityByGridPosition(node.GridPosition))
-            .Where(entity => entity != null)
-            .ToList();
-
+        List<Entity> entities = GetTouchedEntities(launcher.GridPosition, targetGridPosition, gameState, map);
         List<IPacket> clientEffects = new();
         foreach (ServerEffectBase effect in effects)
         {
             clientEffects.AddRange(effect.Apply(launcher, entities, targetGridPosition, gameState, map));
         }
-
         return clientEffects;
     }
 }

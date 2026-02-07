@@ -12,7 +12,7 @@ public class AiActionMove : IAiAction
     
     public List<IPacket> Apply(GameState gameState, Map map)
     {
-        return new List<IPacket> { GameServerAction.Move(GridPosition, gameState) };
+        return new List<IPacket> { GameServerAction.Move(GridPosition, gameState, map) };
     }
 }
 
@@ -23,6 +23,8 @@ public class AiActionLaunchSpell : IAiAction
     
     public List<IPacket> Apply(GameState gameState, Map map)
     {
-        return GameServerAction.LaunchSpell(SpellId, GridPosition, gameState, map);
+        Spell spell = SpellDatabase.GetById(SpellId);
+        if (spell == null) return new List<IPacket>();
+        return spell.Launch(gameState.CurrentEntity, GridPosition, gameState, map);
     }
 }

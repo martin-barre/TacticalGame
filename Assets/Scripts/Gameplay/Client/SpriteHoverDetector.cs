@@ -9,7 +9,7 @@ public class SpriteHoverDetector : MonoSingleton<SpriteHoverDetector>
         TooltipUI.Instance.Hide<EntityOverUI>();
         Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         Node node = GameManagerClient.Instance.Map.GetNode(mousePosition);
-        if (node != null)
+        if (node.NodeType != NodeType.Invalid)
         {
             Entity entity = GameManagerClient.Instance.GameState.GetEntityByGridPosition(node.GridPosition);
             if (entity != null)

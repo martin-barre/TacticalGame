@@ -4,14 +4,20 @@ using UnityEngine;
 
 public static class GameServerAction
 {
-    public static PacketMove Move(Vector2Int gridPosition, GameState gameState)
+    public static PacketMove Move(Vector2Int gridPosition, GameState gameState, Map map)
     {
         Entity entity = gameState.CurrentEntity;
-        List<Node> path = BFS.GetPath(entity.GridPosition, gridPosition, gameState, GameManagerServer.Instance.Map);
-        entity.Pm -= path.Count;
-        gameState.MoveOrSwapEntity(entity, gridPosition);
+        List<Node> path = BFS.GetPath(entity.GridPosition, gridPosition, gameState, map);
 
-        return new PacketMove(entity.Id, path.Count, path.Select(n => n.GridPosition).ToArray());
+        PacketMove packetMove = new() {
+            TargetId = entity.Id,
+            PmCost = path.Count,
+            Path = path.Select(n => n.GridPosition).ToArray()
+        };
+        
+        packetMove.Apply(gameState, map);
+
+        return packetMove;
     }
     
     public static List<IPacket> LaunchSpell(int spellId, Vector2Int targetPos, GameState gameState, Map map)
@@ -29,36 +35,23 @@ public static class GameServerAction
         List<Node> fovNodes = FOV.GetDisplacement(entity, spell, gameState, map);
         if(fovNodes.All(n => n.GridPosition != targetPos))
             return clientEffects;
-        
-        entity.Pa -= spell.paCost;
-        
-        clientEffects.Add(new PacketLaunchSpell(entity.Id, spellId, targetPos));
-        clientEffects.AddRange(spell.Launch(entity, spell, targetPos, gameState, map));
+
+        PacketLaunchSpell packetLaunchSpell = new() { LauncherId = entity.Id, SpellId = spellId, TargetPos = targetPos };
+        packetLaunchSpell.Apply(gameState, map);
+        clientEffects.Add(packetLaunchSpell);
+        clientEffects.AddRange(spell.Launch(entity, targetPos, gameState, map));
 
         return clientEffects;
     }
     
-    public static List<IPacket> NextTurn(GameState gameState)
+    public static List<IPacket> NextTurn(GameState gameState, Map map)
     {
-        Entity entity = gameState.CurrentEntity;
-        entity.Pa = entity.Race.Pa;
-        entity.Pm = entity.Race.Pm;
-        entity.Buffs.RemoveAll(s => s.TurnDuration is 0 or 1);
-        entity.Buffs.ForEach(s =>
-        {
-            if (s.TurnDuration != -1)
-            {
-                s.TurnDuration--;
-            }
-        });
-        
-        gameState.CurrentEntityIndex =
-            gameState.CurrentEntityIndex >= gameState.Entities.Count - 1
-                ? 0
-                : gameState.CurrentEntityIndex + 1;
-        
-        List<IPacket> packets = new() { new PacketNextTurn() };
+        List<IPacket> packets = new();
 
+        PacketNextTurn packetNextTurn = new();
+        packetNextTurn.Apply(gameState, map);
+        packets.Add(packetNextTurn);
+        
         // APPLY START TURN BUFF EFFECTS
         List<ActiveBuff> serverEffects = gameState.CurrentEntity.Buffs
             .Where(b => b.Buff.StartTurnEffects.Any())
@@ -73,7 +66,7 @@ public static class GameServerAction
                     new List<Entity> { gameState.CurrentEntity },
                     gameState.CurrentEntity.GridPosition,
                     gameState,
-                    GameManagerServer.Instance.Map));
+                    map));
             }
         }
         

@@ -16,8 +16,8 @@ public class ActionRequestSender : NetworkSingleton<ActionRequestSender>
     public void MoveServerRpc(Vector2Int gridPosition, ServerRpcParams rpcParams = default)
     {
         if (!CanDoAction(rpcParams)) return;
-        IPacket packet = GameServerAction.Move(gridPosition, GameManagerServer.Instance.GameState);
-        ActionResultSender.Instance.SendEffectClientRpc(MessagePackSerializer.Serialize(packet));
+        IPacket packet = GameServerAction.Move(gridPosition, GameManagerServer.Instance.GameState, GameManagerServer.Instance.Map);
+        ActionResultSender.Instance.SendPacketClientRpc(MessagePackSerializer.Serialize(packet));
     }
     
     [ServerRpc(RequireOwnership = false)]
@@ -25,15 +25,15 @@ public class ActionRequestSender : NetworkSingleton<ActionRequestSender>
     {
         if (!CanDoAction(rpcParams)) return;
         List<IPacket> clientEffects = GameServerAction.LaunchSpell(spellId, targetPos, GameManagerServer.Instance.GameState, GameManagerServer.Instance.Map);
-        ActionResultSender.Instance.SendEffectsClientRpc(MessagePackSerializer.Serialize(clientEffects));
+        ActionResultSender.Instance.SendPacketsClientRpc(MessagePackSerializer.Serialize(clientEffects));
     }
     
     [ServerRpc(RequireOwnership = false)]
     public void NextTurnServerRpc(ServerRpcParams rpcParams = default)
     {
         if (!CanDoAction(rpcParams)) return;
-        List<IPacket> packets = GameServerAction.NextTurn(GameManagerServer.Instance.GameState);
-        ActionResultSender.Instance.SendEffectsClientRpc(MessagePackSerializer.Serialize(packets));
+        List<IPacket> packets = GameServerAction.NextTurn(GameManagerServer.Instance.GameState, GameManagerServer.Instance.Map);
+        ActionResultSender.Instance.SendPacketsClientRpc(MessagePackSerializer.Serialize(packets));
         GameManagerServer.Instance.TestPlayIA();
     }
     

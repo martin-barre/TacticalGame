@@ -1,46 +1,57 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using MessagePack;
 using Unity.Netcode;
 
 public class ActionResultSender : NetworkSingleton<ActionResultSender>
 {
-    private readonly Queue<IPacket[]> _bufferEffects = new();
+    private readonly Queue<IPacket[]> _bufferPackets = new();
     private bool _isProcessing;
 
     private void Update()
     {
-        if (!_isProcessing && _bufferEffects.Count > 0)
+        if (!_isProcessing && _bufferPackets.Count > 0)
         {
-            StartCoroutine(ApplyEffectsCoroutine(_bufferEffects.Dequeue()));
+            StartCoroutine(ApplyPacketsCoroutine(_bufferPackets.Dequeue()));
         }
     }
 
     [ClientRpc]
-    public void SendEffectClientRpc(byte[] serializedEffect, ClientRpcParams _ = default)
+    public void SendPacketClientRpc(byte[] serializedPacket, ClientRpcParams _ = default)
     {
-        IPacket effect = MessagePackSerializer.Deserialize<IPacket>(serializedEffect);
-        _bufferEffects.Enqueue(new []{ effect });
+        IPacket packet = MessagePackSerializer.Deserialize<IPacket>(serializedPacket);
+        _bufferPackets.Enqueue(new []{ packet });
     }
     
     [ClientRpc]
-    public void SendEffectsClientRpc(byte[] serializedEffects, ClientRpcParams _ = default)
+    public void SendPacketsClientRpc(byte[] serializedPackets, ClientRpcParams _ = default)
     {
-        IPacket[] effects = MessagePackSerializer.Deserialize<IPacket[]>(serializedEffects);
-        _bufferEffects.Enqueue(effects);
+        IPacket[] packets = MessagePackSerializer.Deserialize<IPacket[]>(serializedPackets);
+        _bufferPackets.Enqueue(packets);
+    }
+    
+    [ClientRpc]
+    public void SendTeamClientRpc(Team team, ClientRpcParams _ = default)
+    {
+        GameManagerClient.Instance.Team = team;
     }
 
-    private IEnumerator ApplyEffectsCoroutine(IPacket[] effects)
+    private IEnumerator ApplyPacketsCoroutine(IPacket[] packets)
     {
         _isProcessing = true;
-        foreach (IPacket effect in effects)
+        foreach (IPacket packet in packets)
         {
-            Task task = effect.ApplyAsync();
+            packet.Apply(GameManagerClient.Instance.GameState, GameManagerClient.Instance.Map);
+            Task task = GameManagerClient.Instance.PacketRendererRegistry.RenderAsync(packet);
             while (!task.IsCompleted) yield return null;
         }
         _isProcessing = false;
 
-        InteractionManager.Instance.DisplayMovementNode();
+        if (GameManagerClient.Instance.Team != null && GameManagerClient.Instance.GameState.Entities.Any())
+        {
+            InteractionManager.Instance.DisplayMovementNode();
+        }
     }
 }

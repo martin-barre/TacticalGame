@@ -14,16 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Id: 10
   iconSprite: {fileID: -23858003, guid: 1d3cb48ad83392747a95b19f0db695a2, type: 3}
-  spellName: Fleche Magique
+  spellName: Fleche Enflamme
   paCost: 1
-  fovMode: 2
+  fovMode: 0
   xRay: 0
   canLaunchOnEntity: 1
   poMin: 1
   poMax: 6
   zone:
-    rid: 3082811418379812957
-  sfx: []
+    rid: 5648573365439692898
+  sfx:
+  - target: 1
+    prefab: {fileID: 6599497159718569191, guid: 52193a661e36f4f46b3e9a4c91dc64c2, type: 3}
   effects:
   - rid: 161247212505661558
   - rid: 161247212505661559
@@ -49,8 +51,7 @@ MonoBehaviour:
         launcherMustBeInZone: 0
         nbOfTile: 1
         centerPoint: 0
-    - rid: 3082811418379812957
-      type: {class: LineSpellZone, ns: , asm: Assembly-CSharp}
+    - rid: 5648573365439692898
+      type: {class: ArcSpellZone, ns: , asm: Assembly-CSharp}
       data:
-        size: 4
-        horizontal: 0
+        size: 3

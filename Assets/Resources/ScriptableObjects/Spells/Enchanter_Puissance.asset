@@ -23,7 +23,9 @@ MonoBehaviour:
   poMax: 6
   zone:
     rid: 3082811418379812951
-  sfx: []
+  sfx:
+  - target: 1
+    prefab: {fileID: 1967976349292024483, guid: ebc7458439fc5824ca9ca5efa29142ec, type: 3}
   effects:
   - rid: 6802447608591417430
   references:
