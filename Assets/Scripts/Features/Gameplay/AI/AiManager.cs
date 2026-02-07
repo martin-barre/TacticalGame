@@ -1,17 +1,8 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public static class AiManager
 {
-    public enum AiBehaviorType
-    {
-        Aggressive,
-        Distance,
-        Support
-    }
-
     public static List<IPacket> PlayOnAction(Entity entity, GameState gameState, Map map, AiBehaviorType behavior)
     {
         List<IAiAction> bestActions = GetBestActions(entity, gameState, map, behavior);

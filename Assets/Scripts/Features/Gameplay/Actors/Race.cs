@@ -13,5 +13,4 @@ public class Race : ScriptableObject
     public int Pa;
     public int Pm;
     public List<Spell> Spells;
-    public AiEnum AiEnum;
 }

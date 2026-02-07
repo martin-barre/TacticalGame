@@ -148,7 +148,7 @@ public class GameManagerServer : MonoSingleton<GameManagerServer>
     {
         while(!GameState.CurrentEntity.IsPlayer)
         {
-            List<IPacket> clientEffects = AiManager.PlayOnAction(GameState.CurrentEntity, GameState, Map, AiManager.AiBehaviorType.Aggressive);
+            List<IPacket> clientEffects = AiManager.PlayOnAction(GameState.CurrentEntity, GameState, Map, AiBehaviorType.Aggressive);
             ActionResultSender.Instance.SendPacketsClientRpc(MessagePackSerializer.Serialize(clientEffects));
             yield return null;
         }
