@@ -32,9 +32,9 @@ public class MapManager : MonoSingleton<MapManager>
         _map.Width = _bounds.xMax - _bounds.xMin;
         _map.Height = _bounds.yMax - _bounds.yMin;
         _map.Grid = new Node[_map.Width * _map.Height];
-        for (int x = _bounds.xMin; x < _bounds.xMax; x++)
+        for (int y = _bounds.yMin; y < _bounds.yMax; y++)
         {
-            for (int y = _bounds.yMin; y < _bounds.yMax; y++)
+            for (int x = _bounds.xMin; x < _bounds.xMax; x++)
             {
                 TileBase currentTile = tilemapCollider.GetTile(Vector3Int.CeilToInt(new Vector3(x, y)));
 
@@ -52,9 +52,9 @@ public class MapManager : MonoSingleton<MapManager>
         // INITIALIZE SPAWNS
         _map.SpawnsRed = new List<Node>();
         _map.SpawnsBlue = new List<Node>();
-        for (int x = _bounds.xMin; x < _bounds.xMax; x++)
+        for (int y = _bounds.yMin; y < _bounds.yMax; y++)
         {
-            for (int y = _bounds.yMin; y < _bounds.yMax; y++)
+            for (int x = _bounds.xMin; x < _bounds.xMax; x++)
             {
                 TileBase currentTile = tilemapSpawns.GetTile(Vector3Int.CeilToInt(new Vector2(x, y)));
                 if (currentTile == null) continue;
@@ -111,14 +111,6 @@ public class MapManager : MonoSingleton<MapManager>
         TileBase[] tiles = nodes.Select(n => spawnBlueTile).ToArray();
         tilemapOverlay1.SetTiles(positions, tiles);
     }
-
-    public void SetOverlay3(params Node[] nodes)
-    {
-        tilemapOverlay3.ClearAllTiles();
-        Vector3Int[] positions = nodes.Select(n => new Vector3Int(n.GridPosition.x + _bounds.xMin, n.GridPosition.y + _bounds.yMin, 0)).ToArray();
-        TileBase[] tiles = nodes.Select(n => spawnBlueTile).ToArray();
-        tilemapOverlay3.SetTiles(positions, tiles);
-    }
     
     public void SetOverlay2(params Node[] nodes)
     {
@@ -126,5 +118,13 @@ public class MapManager : MonoSingleton<MapManager>
         Vector3Int[] positions = nodes.Select(n => new Vector3Int(n.GridPosition.x + _bounds.xMin, n.GridPosition.y + _bounds.yMin, 0)).ToArray();
         TileBase[] tiles = nodes.Select(n => spawnRedTile).ToArray();
         tilemapOverlay2.SetTiles(positions, tiles);
+    }
+    
+    public void SetOverlay3(params Node[] nodes)
+    {
+        tilemapOverlay3.ClearAllTiles();
+        Vector3Int[] positions = nodes.Select(n => new Vector3Int(n.GridPosition.x + _bounds.xMin, n.GridPosition.y + _bounds.yMin, 0)).ToArray();
+        TileBase[] tiles = nodes.Select(n => spawnBlueTile).ToArray();
+        tilemapOverlay3.SetTiles(positions, tiles);
     }
 }

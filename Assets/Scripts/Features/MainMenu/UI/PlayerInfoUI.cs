@@ -24,6 +24,6 @@ public class PlayerInfoUI : MonoBehaviour
 
     public void Remove()
     {
-        _sessionServiceFacade.RemovePlayerAsync(_player.Id);
+        _ = _sessionServiceFacade.RemovePlayerAsync(_player.Id);
     }
 }

@@ -22,10 +22,10 @@ public class SceneReadyTracker : NetworkBehaviour
         }
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    public void NotifyClientReadyServerRpc(ServerRpcParams serverRpcParams = default)
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    public void NotifyClientReadyRpc(RpcParams rpcParams = default)
     {
-        var clientId = serverRpcParams.Receive.SenderClientId;
+        ulong clientId = rpcParams.Receive.SenderClientId;
         if (_readyClients.Add(clientId))
         {
             Debug.Log($"[SceneReadyTracker] Client {clientId} est prêt ({_readyClients.Count}/{NetworkManager.Singleton.ConnectedClientsIds.Count})");
@@ -41,7 +41,7 @@ public class SceneReadyTracker : NetworkBehaviour
 
     private bool AllClientsReady()
     {
-        foreach (var clientId in NetworkManager.Singleton.ConnectedClientsIds)
+        foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
         {
             if (!_readyClients.Contains(clientId))
                 return false;

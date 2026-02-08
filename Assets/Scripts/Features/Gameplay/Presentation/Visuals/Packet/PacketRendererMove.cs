@@ -18,7 +18,11 @@ public sealed class PacketRendererMove : IPacketRenderer<PacketMove>
         entityPrefab.GetComponentInChildren<Animator>()?.SetBool("Move", true);
         PathMover pathMover = new(packet.Path.Select(pos => MapManager.Instance.GridPositionToWorlPosition(pos)).ToList(), 2.5f);
         await pathMover.Move(entityPrefab);
-        InteractionManager.ShowInfo($"{packet.PmCost}", entityPrefab.transform.position + Vector3.up * 1f, Color.green);
         entityPrefab.GetComponentInChildren<Animator>()?.SetBool("Move", false);
+        
+        if (packet.PmCost > 0)
+        {
+            InteractionManager.ShowInfo($"{packet.PmCost}", entityPrefab.transform.position + Vector3.up * 1f, Color.green);
+        }
     }
 }

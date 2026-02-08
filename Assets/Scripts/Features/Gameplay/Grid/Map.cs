@@ -46,4 +46,17 @@ public class Map
         if (cellId < 0 || cellId >= Grid.Length) return false;
         return Grid[cellId] is { NodeType: NodeType.Ground };
     }
+    
+    public bool IsOpaque(Vector2Int gridPosition)
+    {
+        if (gridPosition.x < 0 || gridPosition.x >= Width || gridPosition.y < 0 || gridPosition.y >= Height) return false;
+        Node node = Grid[gridPosition.x + gridPosition.y * Width];
+        return node is { NodeType: NodeType.Wall };
+    }
+    
+    public bool IsOpaque(int cellId)
+    {
+        if (cellId < 0 || cellId >= Grid.Length) return false;
+        return Grid[cellId] is { NodeType: NodeType.Wall };
+    }
 }

@@ -38,13 +38,9 @@ public class ApplicationController : MonoBehaviour
     {
         Application.wantsToQuit -= OnWantToQuit;
 
-        bool canQuit = true; // m_LocalSession != null && string.IsNullOrEmpty(m_LocalSession.SessionID);
-        if (!canQuit)
-        {
-            StartCoroutine(LeaveBeforeQuit());
-        }
+        StartCoroutine(LeaveBeforeQuit());
 
-        return canQuit;
+        return true;
     }
 
     private void QuitGame()

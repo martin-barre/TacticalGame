@@ -140,12 +140,12 @@ public class SessionViewerUI : MonoBehaviour
     
     private void CreateSession()
     {
-        _sessionServiceFacade.CreateSessionAsHost(inputFieldName.text, inputFieldPassword.text, 2);
+        _ = _sessionServiceFacade.CreateSessionAsHost(inputFieldName.text, inputFieldPassword.text, 2);
     }
 
     private void QuitSession()
     {
-        _sessionServiceFacade.QuitSession();
+        _ = _sessionServiceFacade.QuitSession();
     }
 
     private void LaunchGame()

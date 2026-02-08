@@ -16,7 +16,7 @@ MonoBehaviour:
   iconSprite: {fileID: -911944872, guid: 1d3cb48ad83392747a95b19f0db695a2, type: 3}
   spellName: Attirance
   paCost: 1
-  fovMode: 0
+  fovMode: 2
   xRay: 0
   canLaunchOnEntity: 1
   poMin: 1

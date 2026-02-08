@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class SpriteHoverDetector : MonoSingleton<SpriteHoverDetector>
 {
@@ -7,7 +8,7 @@ public class SpriteHoverDetector : MonoSingleton<SpriteHoverDetector>
     private void Update()
     {
         TooltipUI.Instance.Hide<EntityOverUI>();
-        Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue());
         Node node = GameManagerClient.Instance.Map.GetNode(mousePosition);
         if (node.NodeType != NodeType.Invalid)
         {
@@ -20,7 +21,7 @@ public class SpriteHoverDetector : MonoSingleton<SpriteHoverDetector>
                     Vector3 screenPos = Camera.main.WorldToScreenPoint(entityPrefabController.overHeadPosition.transform.position);
                     TooltipUI.Instance.Show<EntityOverUI>(screenPos, TooltipPosition.Top, tooltip => tooltip.SetUI(entity));
 
-                    if (Input.GetButtonDown("Fire2"))
+                    if (Mouse.current.rightButton.wasPressedThisFrame)
                     {
                         EntityInfoWindow window = WindowManager.Instance.CreateWindow(entityInfoWindow);
                         window.Bind(entity);

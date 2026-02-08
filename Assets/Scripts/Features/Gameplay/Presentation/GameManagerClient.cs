@@ -11,7 +11,7 @@ public class GameManagerClient : MonoSingleton<GameManagerClient>
     public event Action<string> OnChatMessage;
     public GameState GameState;
     public Map Map;
-    public Team Team;
+    public Team? Team;
     
     public readonly PacketRendererRegistry PacketRendererRegistry = new();
     
@@ -43,7 +43,7 @@ public class GameManagerClient : MonoSingleton<GameManagerClient>
     {
         // Attendre une frame pour laisser le temps à tous les Start() de s'exécuter
         yield return null;
-        ActionRequestSender.Instance.NotifyClientReadyServerRpc();
+        ActionRequestSender.Instance.NotifyClientReadyRpc();
     }
 
     public void SpawnEntity(int entityId, int raceId, Vector2Int gridPosition)

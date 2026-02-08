@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using Unity.Mathematics;
 using UnityEngine;
 
 public enum FovMode
@@ -12,7 +14,7 @@ public enum FovMode
 
 public static class FOV
 {
-    public static List<Node> GetDisplacement(Entity entity, Spell spell, GameState gameState, Map map)
+    public static List<Node> GetDisplacement(Entity entity, Spell spell, GameState gameState, Map map, bool forceXRay = false)
     {
         List<Node> nodes = new();
         if (spell.poMin == 0)
@@ -22,107 +24,182 @@ public static class FOV
 
         if (spell.fovMode == FovMode.NORMAL)
         {
-            if (spell.xRay) nodes.AddRange(DoXRay(entity, spell, gameState, map));
-            else nodes.AddRange(DoFOV(entity, spell, gameState, map));
+            if (spell.xRay || forceXRay) nodes.AddRange(DoXRay(entity, spell, gameState, map));
+            else nodes.AddRange(DoFov(entity.GridPosition, spell, gameState, map));
         }
         else if (spell.fovMode == FovMode.SQUARE)
         {
-            if (spell.xRay) nodes.AddRange(DoXRay(entity, spell, gameState, map));
-            else nodes.AddRange(DoFOV(entity, spell, gameState, map));
+            if (spell.xRay || forceXRay) nodes.AddRange(DoXRay(entity, spell, gameState, map));
+            else nodes.AddRange(DoFov(entity.GridPosition, spell, gameState, map));
         }
         else if (spell.fovMode == FovMode.LINE)
         {
-            nodes.AddRange(DoLineOnly(entity, spell, gameState, map));
+            nodes.AddRange(DoLineOnly(entity, spell, gameState, map, forceXRay));
         }
         else if (spell.fovMode == FovMode.DIAGONAL)
         {
-            nodes.AddRange(DoDiagonalOnly(entity, spell, gameState, map));
+            nodes.AddRange(DoDiagonalOnly(entity, spell, gameState, map, forceXRay));
         }
         else if (spell.fovMode == FovMode.LINE_DIAGONAL)
         {
-            nodes.AddRange(DoLineOnly(entity, spell, gameState, map));
-            nodes.AddRange(DoDiagonalOnly(entity, spell, gameState, map));
+            nodes.AddRange(DoLineOnly(entity, spell, gameState, map, forceXRay));
+            nodes.AddRange(DoDiagonalOnly(entity, spell, gameState, map, forceXRay));
         }
         return nodes;
     }
-
-    private static List<Node> DoFOV(Entity entity, Spell spell, GameState gameState, Map map)
+    
+    // Octant transform multipliers: xx, xy, yx, yy
+    private static readonly int[][] OctantMultipliers =
     {
-        Vector3Int[] directions = {
-            new(1, 1, 0),   // UP UP RIGHT
-            new(1, 1, 1),   // UP UP LEFT
-            new(1, -1, 0),  // RIGHT RIGHT UP
-            new(1, -1, 1),  // RIGHT RIGHT DOWN
-            new(-1, -1, 1), // DOWN DOWN RIGHT
-            new(-1, -1, 0), // DOWN DOWN LEFT
-            new(-1, 1, 0),  // LEFT LEFT DOWN
-            new(-1, 1, 1),  // LEFT LEFT UP
-        };
+        new[] { 1,  0,  0, -1}, // N-NE
+        new[] { 0,  1, -1,  0}, // E-NE
+        new[] { 0,  1,  1,  0}, // E-SE
+        new[] { 1,  0,  0,  1}, // S-SE
+        new[] {-1,  0,  0,  1}, // S-SW
+        new[] { 0, -1,  1,  0}, // W-SW
+        new[] { 0, -1, -1,  0}, // W-NW
+        new[] {-1,  0,  0, -1}, // N-NW
+    };
 
-        List<Node> nodes = new();
-        foreach (Vector3Int direction in directions)
-        {
-            nodes.AddRange(DoFOVRecursive(entity, spell, 0, 0.0f, 1.0f, direction, gameState, map));
-        }
-        return nodes;
-    }
-
-    private static List<Node> DoFOVRecursive(Entity entity, Spell spell, int startLigne, float angleMin, float angleMax, Vector3Int direction, GameState gameState, Map map)
+    private readonly struct Slope
     {
-        List<Node> nodes = new();
+        public readonly long Num;
+        public readonly long Den;
 
-        for (int x = startLigne; x <= spell.poMax; x++)
+        public Slope(long num, long den)
         {
-            bool blocked = false;
-            for (int y = 0; y <= spell.poMax; y++)
+            // On veut den > 0 pour simplifier les comparaisons
+            if (den < 0)
             {
-                if (angleMin > angleMax) return nodes;
-                if (x == 0 && y == 0) continue;
-                if (y == 0 && direction.y > 0 && direction.x > 0) continue;
-                if (y == 0 && direction.y < 0 && direction.x < 0) continue;
-                if (spell.fovMode != FovMode.SQUARE && x + y > spell.poMax) continue;
+                num = -num;
+                den = -den;
+            }
+            Num = num;
+            Den = den;
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Less(in Slope a, in Slope b) => a.Num * b.Den <  b.Num * a.Den;
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Greater(in Slope a, in Slope b) => a.Num * b.Den >  b.Num * a.Den;
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool LessOrEqual(in Slope a, in Slope b) => a.Num * b.Den <= b.Num * a.Den;
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool GreaterOrEqual(in Slope a, in Slope b) => a.Num * b.Den >= b.Num * a.Den;
 
-                // RECUPERATION DU NODE
-                int realX = direction.z == 0 ? x : y;
-                int realY = direction.z == 0 ? y : x;
-                realX = entity.GridPosition.x + realX * direction.x;
-                realY = entity.GridPosition.y + realY * direction.y;
-                Node node = map.GetNode(new Vector2Int(realX, realY));
+        public static readonly Slope One  = new(1, 1);
+        public static readonly Slope Zero = new(0, 1);
+    }
+    
+    public static List<Node> DoFov(Vector2Int startPosition, Spell spell, GameState gameState, Map map)
+    {
+        List<Node> nodes = new();
+        
+        for (int i = 0; i < 8; i++)
+        {
+            CastLight(startPosition, spell, 1, Slope.One, Slope.Zero, OctantMultipliers[i], gameState, map, nodes, i);
+        }
 
-                float angle = (float)y / x;
+        return nodes;
+    }
 
-                // DESACTIVE LA CASE CAR ELLE N'EST PAS VISIBLE
-                bool active = !(angle < angleMin || angle > angleMax);
+    private static void CastLight(Vector2Int startPosition, Spell spell, int row, Slope start, Slope end, int[] mult, GameState gameState, Map map, List<Node> nodes, int octantIndex)
+    {
+        if (Slope.Less(start, end)) return;
 
-                if (node.NodeType is NodeType.Invalid or NodeType.Wall || gameState.GetEntityByGridPosition(node.GridPosition) != null)
+        int xx = mult[0];
+        int xy = mult[1];
+        int yx = mult[2];
+        int yy = mult[3];
+
+        bool isOdd = octantIndex % 2 != 0;
+
+        for (int j = row; j <= spell.poMax; j++)
+        {
+            int dx = -j - 1;
+            int dy = -j;
+            bool blocked = false;
+            Slope newStart = start;
+            int kLimit = spell.fovMode == FovMode.SQUARE ? spell.poMax : spell.poMax - j;
+
+            // Start loop from kLimit instead of j to avoid radius checks
+            for (int k = kLimit; k >= 0; k--)
+            {
+                dx = k;
+                dy = j; // depth
+
+                Slope lSlope = new(2L * dx - 1, 2L * dy + 1);
+                Slope rSlope = new(2L * dx + 1, 2L * dy - 1);
+
+                if (Slope.LessOrEqual(start, lSlope)) continue;
+                if (Slope.GreaterOrEqual(end, rSlope)) break;
+
+                int sax = dx * xx + dy * xy;
+                int say = dx * yx + dy * yy;
+                
+                int realX = startPosition.x + sax;
+                int realY = startPosition.y + say;
+
+                // Bounds check optimization using unsigned cast
+                if ((uint)realX < (uint)map.Width && (uint)realY < (uint)map.Height)
                 {
-                    if (!blocked)
+                    // Restrictive FOV Check basé sur centerSlope = dx/dy :
+                    // start >= dx/dy  <=> start.Num/start.Den >= dx/dy <=> start.Num * dy >= dx * start.Den
+                    // end   <= dx/dy  <=> end.Num/end.Den   <= dx/dy <=> end.Num   * dy <= dx * end.Den
+                    //
+                    // (dy > 0 garanti)
+                    long dyL = dy;
+                    long dxL = dx;
+
+                    if (start.Num * dyL >= dxL * start.Den && end.Num * dyL <= dxL * end.Den)
                     {
-                        float newAngleMax = (y - .5f) / (x + .5f);
-                        nodes.AddRange(DoFOVRecursive(entity, spell, x + 1, angleMin, newAngleMax, direction, gameState, map));
-                        blocked = true;
+                        if (spell.fovMode == FovMode.SQUARE ? (dx >= spell.poMin && dy >= spell.poMin) : dx + dy >= spell.poMin)
+                        {
+                            if (map.IsWalkable(realY * map.Width + realX))
+                            {
+                                // Avoid double-visiting edges
+                                if (!isOdd || (k > 0 && k < j))
+                                {
+                                    nodes.Add(map.GetNode(new Vector2Int(realX, realY)));
+                                }
+                            }
+                        }
                     }
-                    float newAngleMin = (y + .5f) / (x - .5f);
-                    angleMin = Mathf.Max(angleMin, newAngleMin);
-                }
-                else
-                {
-                    blocked = false;
-                }
 
-                if (angle > angleMax) break;
-
-                if (active && node is { NodeType: NodeType.Ground })
-                {
-                    if (spell.fovMode == FovMode.SQUARE && Mathf.Abs(x) < spell.poMin && Mathf.Abs(y) < spell.poMin) continue;
-                    if (spell.fovMode != FovMode.SQUARE && x + y < spell.poMin) continue;
-                    if (direction.z == 0 && x == y) continue;
-                    if (!spell.canLaunchOnEntity && gameState.GetEntityByGridPosition(node.GridPosition) != null) continue;
-                    nodes.Add(node);
+                    // Direct grid access
+                    bool isOpaque = map.IsOpaque(realY * map.Width + realX);
+                    bool hasEntity = gameState.GetEntityByGridPosition(new Vector2Int(realX, realY)) != null;
+                    
+                    if (blocked)
+                    {
+                        if (isOpaque || hasEntity)
+                        {
+                            newStart = lSlope;
+                            continue;
+                        }
+                        else
+                        {
+                            blocked = false;
+                            start = newStart;
+                        }
+                    }
+                    else
+                    {
+                        if ((isOpaque || hasEntity) && j < spell.poMax)
+                        {
+                            blocked = true;
+                            CastLight(startPosition, spell, j + 1, start, rSlope, mult, gameState, map, nodes, octantIndex);
+                            newStart = lSlope;
+                        }
+                    }
                 }
             }
+
+            if (blocked) break;
         }
-        return nodes;
     }
 
     private static List<Node> DoXRay(Entity entity, Spell spell, GameState gameState, Map map)
@@ -147,7 +224,7 @@ public static class FOV
         return nodes;
     }
 
-    private static List<Node> DoLineOnly(Entity entity, Spell spell, GameState gameState, Map map)
+    private static List<Node> DoLineOnly(Entity entity, Spell spell, GameState gameState, Map map, bool forceXRay = false)
     {
         Vector2Int[] directions = { Vector2Int.left, Vector2Int.right, Vector2Int.up, Vector2Int.down };
 
@@ -164,7 +241,7 @@ public static class FOV
                     nodes.Add(node);
                 }
 
-                if (!spell.xRay)
+                if (!spell.xRay && !forceXRay)
                 {
                     if (node.NodeType is NodeType.Wall || (node.NodeType != NodeType.Invalid && gameState.GetEntityByGridPosition(node.GridPosition) != null))
                     {
@@ -176,7 +253,7 @@ public static class FOV
         return nodes;
     }
 
-    private static List<Node> DoDiagonalOnly(Entity entity, Spell spell, GameState gameState, Map map)
+    private static List<Node> DoDiagonalOnly(Entity entity, Spell spell, GameState gameState, Map map, bool forceXRay = false)
     {
         Vector2Int[] directions = {
             new(1, 1),
@@ -200,7 +277,7 @@ public static class FOV
                     nodes.Add(node);
                 }
 
-                if (!spell.xRay && (node.NodeType is NodeType.Invalid or NodeType.Wall || gameState.GetEntityByGridPosition(node.GridPosition) != null))
+                if (!spell.xRay && !forceXRay && (node.NodeType is NodeType.Invalid or NodeType.Wall || gameState.GetEntityByGridPosition(node.GridPosition) != null))
                 {
                     break;
                 }

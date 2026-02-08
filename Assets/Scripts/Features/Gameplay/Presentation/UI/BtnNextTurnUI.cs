@@ -9,7 +9,7 @@ public class BtnNextTurnUI : MonoBehaviour
     {
         btnNextTurn.onClick.AddListener(() =>
         {
-            ActionRequestSender.Instance.NextTurnServerRpc();
+            ActionRequestSender.Instance.NextTurnRpc();
         });
     }
 

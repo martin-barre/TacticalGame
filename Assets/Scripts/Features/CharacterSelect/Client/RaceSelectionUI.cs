@@ -13,7 +13,7 @@ public class RaceSelectionUI : MonoBehaviour
         foreach (Race race in RaceDatabase.GetAll())
         {
             RaceInfoUI instance = Instantiate(raceInfoUI, container);
-            instance.OnCharacterSelected += id => RaceSelectionManagerServer.Instance.RequestAddCharacterServerRpc(id);
+            instance.OnCharacterSelected += id => RaceSelectionManagerServer.Instance.RequestAddCharacterRpc(id);
             instance.SetRace(race);
         }
     }
@@ -32,7 +32,7 @@ public class RaceSelectionUI : MonoBehaviour
             {
                 Race race = RaceDatabase.GetById(raceId);
                 RaceInfoUI instance = Instantiate(raceInfoUI, containerPlayer1);
-                instance.OnCharacterSelected += id => RaceSelectionManagerServer.Instance.RequestRemoveCharacterServerRpc(id);
+                instance.OnCharacterSelected += id => RaceSelectionManagerServer.Instance.RequestRemoveCharacterRpc(id);
                 instance.SetRace(race);
             }
         }
@@ -49,7 +49,7 @@ public class RaceSelectionUI : MonoBehaviour
             {
                 Race race = RaceDatabase.GetById(raceId);
                 RaceInfoUI instance = Instantiate(raceInfoUI, containerPlayer2);
-                instance.OnCharacterSelected += id => RaceSelectionManagerServer.Instance.RequestRemoveCharacterServerRpc(id);
+                instance.OnCharacterSelected += id => RaceSelectionManagerServer.Instance.RequestRemoveCharacterRpc(id);
                 instance.SetRace(race);
             }
         }

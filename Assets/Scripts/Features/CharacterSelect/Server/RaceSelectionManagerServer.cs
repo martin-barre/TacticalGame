@@ -29,8 +29,8 @@ public class RaceSelectionManagerServer : NetworkSingleton<RaceSelectionManagerS
 
     // --- RPCs ---
 
-    [ServerRpc(RequireOwnership = false)]
-    public void RequestAddCharacterServerRpc(int characterId, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    public void RequestAddCharacterRpc(int characterId, RpcParams rpcParams = default)
     {
         ulong sender = rpcParams.Receive.SenderClientId;
         if (!_playerSelections.TryGetValue(sender, out RaceSelectionState state))
@@ -52,8 +52,8 @@ public class RaceSelectionManagerServer : NetworkSingleton<RaceSelectionManagerS
         }
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    public void RequestRemoveCharacterServerRpc(int characterId, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    public void RequestRemoveCharacterRpc(int characterId, RpcParams rpcParams = default)
     {
         ulong sender = rpcParams.Receive.SenderClientId;
         if (!_playerSelections.TryGetValue(sender, out RaceSelectionState state))
@@ -73,8 +73,8 @@ public class RaceSelectionManagerServer : NetworkSingleton<RaceSelectionManagerS
         UpdateClients();
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    public void LockInSelectionServerRpc(ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    public void LockInSelectionRpc(RpcParams rpcParams = default)
     {
         ulong sender = rpcParams.Receive.SenderClientId;
         if (_playerSelections.TryGetValue(sender, out RaceSelectionState state))

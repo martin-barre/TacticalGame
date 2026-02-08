@@ -5,31 +5,31 @@ using UnityEngine;
 
 public class ActionRequestSender : NetworkSingleton<ActionRequestSender>
 {
-    [ServerRpc(RequireOwnership = false)]
-    public void NotifyClientReadyServerRpc(ServerRpcParams serverRpcParams = default)
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    public void NotifyClientReadyRpc(RpcParams rpcParams = default)
     {
-        ulong clientId = serverRpcParams.Receive.SenderClientId;
+        ulong clientId = rpcParams.Receive.SenderClientId;
         GameManagerServer.Instance.SetupClientData(clientId);
     }
     
-    [ServerRpc(RequireOwnership = false)]
-    public void MoveServerRpc(Vector2Int gridPosition, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    public void MoveRpc(Vector2Int gridPosition, RpcParams rpcParams = default)
     {
         if (!CanDoAction(rpcParams)) return;
         IPacket packet = GameServerAction.Move(gridPosition, GameManagerServer.Instance.GameState, GameManagerServer.Instance.Map);
         ActionResultSender.Instance.SendPacketClientRpc(MessagePackSerializer.Serialize(packet));
     }
     
-    [ServerRpc(RequireOwnership = false)]
-    public void LaunchSpellServerRpc(int spellId, Vector2Int targetPos, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    public void LaunchSpellRpc(int spellId, Vector2Int targetPos, RpcParams rpcParams = default)
     {
         if (!CanDoAction(rpcParams)) return;
         List<IPacket> clientEffects = GameServerAction.LaunchSpell(spellId, targetPos, GameManagerServer.Instance.GameState, GameManagerServer.Instance.Map);
         ActionResultSender.Instance.SendPacketsClientRpc(MessagePackSerializer.Serialize(clientEffects));
     }
     
-    [ServerRpc(RequireOwnership = false)]
-    public void NextTurnServerRpc(ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    public void NextTurnRpc(RpcParams rpcParams = default)
     {
         if (!CanDoAction(rpcParams)) return;
         List<IPacket> packets = GameServerAction.NextTurn(GameManagerServer.Instance.GameState, GameManagerServer.Instance.Map);
@@ -37,7 +37,7 @@ public class ActionRequestSender : NetworkSingleton<ActionRequestSender>
         GameManagerServer.Instance.TestPlayIA();
     }
     
-    private bool CanDoAction(ServerRpcParams rpcParams)
+    private bool CanDoAction(RpcParams rpcParams)
     {
         ulong clientId = rpcParams.Receive.SenderClientId;
         SessionPlayerData? sessionData = SessionManager<SessionPlayerData>.Instance.GetPlayerData(clientId);

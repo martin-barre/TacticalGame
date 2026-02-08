@@ -39,14 +39,4 @@ public sealed class GameState
             entityToSwap.GridPosition = oldPosition;
         }
     }
-    
-    public GameState Clone()
-    {
-        return new GameState
-        {
-            IsStarted = IsStarted,
-            CurrentEntityIndex = CurrentEntityIndex,
-            Entities = Entities.Select(e => e.Clone()).ToList()
-        };
-    }
 }

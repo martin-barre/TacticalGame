@@ -61,7 +61,7 @@ public class GameManagerServer : MonoSingleton<GameManagerServer>
             if (i < redRaces.Count)
             {
                 Node node = Map.SpawnsRed.FirstOrDefault(node => GameState.GetEntityByGridPosition(node.GridPosition) == null);
-                SpawnEntity(Team.Red, redRaces[i], node.GridPosition, false, GameState);
+                SpawnEntity(Team.Red, redRaces[i], node.GridPosition, true, GameState);
             }
         }
     }

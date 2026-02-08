@@ -13,7 +13,7 @@ public class RaceSelectionManagerClient : NetworkSingleton<RaceSelectionManagerC
     {
         if (IsClient)
         {
-            RaceSelectionManagerServer.Instance.LockInSelectionServerRpc();
+            RaceSelectionManagerServer.Instance.LockInSelectionRpc();
         }
     }
 }

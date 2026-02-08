@@ -20,7 +20,7 @@ MonoBehaviour:
   xRay: 1
   canLaunchOnEntity: 0
   poMin: 1
-  poMax: 9
+  poMax: 8
   zone:
     rid: 3082811418379812964
   sfx: []

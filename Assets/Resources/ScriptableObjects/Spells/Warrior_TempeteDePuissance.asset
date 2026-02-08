@@ -17,10 +17,10 @@ MonoBehaviour:
   spellName: "Temp\xEAte de puissance"
   paCost: 1
   fovMode: 0
-  xRay: 1
+  xRay: 0
   canLaunchOnEntity: 1
-  poMin: 2
-  poMax: 3
+  poMin: 3
+  poMax: 4
   zone:
     rid: 3082811418379812966
   sfx:

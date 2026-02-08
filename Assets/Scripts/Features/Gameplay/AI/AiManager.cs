@@ -7,7 +7,7 @@ public static class AiManager
     {
         List<IAiAction> bestActions = GetBestActions(entity, gameState, map, behavior);
         
-        List<IPacket> packets = new List<IPacket>();
+        List<IPacket> packets = new();
         foreach (IAiAction action in bestActions)
         {
             packets.AddRange(action.Apply(gameState, map));
@@ -25,7 +25,7 @@ public static class AiManager
         int[] distanceMap = BFS.GetDistanceMap(targets, map);
         int mapWidth = map.Width;
 
-        List<IAiAction> bestActions = new List<IAiAction>();
+        List<IAiAction> bestActions = new();
         int bestScore = int.MinValue;
 
         // 2. Get Reachable Moves (respecting obstacles)
@@ -126,7 +126,7 @@ public static class AiManager
 
     private static List<Vector2Int> GetTargets(Entity entity, GameState gameState, AiBehaviorType behavior)
     {
-        List<Vector2Int> targets = new List<Vector2Int>();
+        List<Vector2Int> targets = new();
         
         // Find relevant entities based on behavior
         foreach (Entity other in gameState.Entities)

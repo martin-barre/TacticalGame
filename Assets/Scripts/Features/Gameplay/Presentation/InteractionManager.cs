@@ -1,14 +1,10 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using DG.Tweening;
-using Unity.Netcode;
-using Debug = UnityEngine.Debug;
+using UnityEngine.InputSystem;
 
 public class InteractionManager : MonoSingleton<InteractionManager>
 {
@@ -16,6 +12,7 @@ public class InteractionManager : MonoSingleton<InteractionManager>
     
     private Spell _selectedSpell;
     private List<Node> _activeNodes = new();
+    private List<Node> _unselectableNodes = new();
     private GameStateViewModel _gameStateViewModel;
 
     private void Start()
@@ -49,36 +46,37 @@ public class InteractionManager : MonoSingleton<InteractionManager>
     
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Q)) DisplaySpellNodeByIndex(0);
-        if (Input.GetKeyDown(KeyCode.W)) DisplaySpellNodeByIndex(1);
-        if (Input.GetKeyDown(KeyCode.E)) DisplaySpellNodeByIndex(2);
-        if (Input.GetKeyDown(KeyCode.R)) DisplaySpellNodeByIndex(3);
+        if (Keyboard.current.qKey.wasPressedThisFrame) DisplaySpellNodeByIndex(0);
+        if (Keyboard.current.wKey.wasPressedThisFrame) DisplaySpellNodeByIndex(1);
+        if (Keyboard.current.eKey.wasPressedThisFrame) DisplaySpellNodeByIndex(2);
+        if (Keyboard.current.rKey.wasPressedThisFrame) DisplaySpellNodeByIndex(3);
         
-        Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue());
         Node node = GameManagerClient.Instance.Map.GetNode(mousePosition);
 
-        if (Input.GetButtonDown("Fire1") && !EventSystem.current.IsPointerOverGameObject())
+        if (Mouse.current.leftButton.wasPressedThisFrame && !EventSystem.current.IsPointerOverGameObject())
         {
             if (_selectedSpell != null) // SI JE SUIS EN TRAIN DE LANCER UN SORT
             {
                 if (_activeNodes.Contains(node)) // SI JE CLICK SUR UNE CASE ACTIVE -> LANCE LE SORT
                 {
-                    ActionRequestSender.Instance.LaunchSpellServerRpc(_selectedSpell.Id, node.GridPosition);
+                    ActionRequestSender.Instance.LaunchSpellRpc(_selectedSpell.Id, node.GridPosition);
                     _selectedSpell = null;
                     MapManager.Instance.SetOverlay1();
+                    MapManager.Instance.SetOverlay3();
                 }
             }
             else // SI JE SUIS EN MODE DEPLACEMENT
             {
                 if (_activeNodes.Contains(node)) // SI JE CLICK SUR UNE CASE ACTIVE -> DEPLACE LE JOUEUR
                 {
-                    ActionRequestSender.Instance.MoveServerRpc(node.GridPosition);
+                    ActionRequestSender.Instance.MoveRpc(node.GridPosition);
                 }
             }
             DisplayMovementNode();
         }
 
-        MapManager.Instance.SetOverlay2(); 
+        MapManager.Instance.SetOverlay2();
         
         if (_activeNodes.Contains(node))
         {
@@ -106,11 +104,13 @@ public class InteractionManager : MonoSingleton<InteractionManager>
                 .Select(rc => GameManagerClient.Instance.Map.GetNode(rc.Position))
                 .ToList();
             MapManager.Instance.SetOverlay1(_activeNodes.ToArray());
+            MapManager.Instance.SetOverlay3();
         }
         else
         {
             _activeNodes.Clear();
             MapManager.Instance.SetOverlay1();
+            MapManager.Instance.SetOverlay3();
         }
     }
     
@@ -133,7 +133,12 @@ public class InteractionManager : MonoSingleton<InteractionManager>
 
         _selectedSpell = spell;
         _activeNodes = FOV.GetDisplacement(entity, _selectedSpell, GameManagerClient.Instance.GameState, GameManagerClient.Instance.Map);
+        
+        if (_selectedSpell.xRay) _unselectableNodes.Clear();
+        else _unselectableNodes = FOV.GetDisplacement(entity, _selectedSpell, GameManagerClient.Instance.GameState, GameManagerClient.Instance.Map, true);
+        
         MapManager.Instance.SetOverlay1(_activeNodes.ToArray());
+        MapManager.Instance.SetOverlay3(_unselectableNodes.ToArray());
     }
     
     public static void ShowInfo(string message, Vector3 position, Color color, float duration = 1f)
