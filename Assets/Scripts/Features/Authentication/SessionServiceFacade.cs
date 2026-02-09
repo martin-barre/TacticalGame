@@ -10,9 +10,7 @@ using UnityEngine.SceneManagement;
 
 public class SessionServiceFacade
 {
-    public event Action OnCurrentSessionChanged;
-    
-    public ISession CurrentSession;
+    public readonly Bindable<ISession> CurrentSession = new();
 
     public async Task<IList<ISessionInfo>> GetAllSessions()
     {
@@ -28,16 +26,15 @@ public class SessionServiceFacade
         return new List<ISessionInfo>();
     }
     
-    public async Task CreateSessionAsHost(string sessionName, string password, int maxPlayers)
+    public async Task<ISession> TryCreateSessionAsync(string sessionName, string password, int maxPlayers)
     {
         SessionOptions options = new SessionOptions
-            {
-                Name = sessionName,
-                Password = string.IsNullOrWhiteSpace(password) ? null : password,
-                MaxPlayers = maxPlayers,
-                PlayerProperties = GetPlayerProperties()
-            }
-            .WithRelayNetwork();
+        {
+            Name = sessionName,
+            Password = string.IsNullOrWhiteSpace(password) ? null : password,
+            MaxPlayers = maxPlayers,
+            PlayerProperties = GetPlayerProperties()
+        }.WithRelayNetwork();
 
         try
         {
@@ -45,14 +42,18 @@ public class SessionServiceFacade
             SetCurrentSession(session);
             
             Debug.Log($"Session created : {session.Id}, code = {session.Code}");
+
+            return session;
         }
         catch (Exception ex)
         {
             Debug.LogError($"Error session creation : {ex}");
         }
+
+        return null;
     }
 
-    public async Task JoinSessionById(string sessionId)
+    public async Task<ISession> TryJoinSessionByIdAsync(string sessionId)
     {
         try
         {
@@ -62,18 +63,21 @@ public class SessionServiceFacade
             });
             SetCurrentSession(session);
             Debug.Log($"Session joined : {session.Id}");
+            return session;
         }
         catch (Exception ex)
         {
             Debug.LogError($"Error session joining : {ex}");
         }
+
+        return null;
     }
 
-    public async Task QuitSession()
+    public async Task LeaveSessionAsync()
     {
         try
         {
-            await CurrentSession.LeaveAsync();
+            await CurrentSession.Value.LeaveAsync();
             SetCurrentSession(null);
         }
         catch (Exception ex)
@@ -84,15 +88,15 @@ public class SessionServiceFacade
 
     public async Task RemovePlayerAsync(string playerId)
     {
-        if (CurrentSession.IsHost && CurrentSession.Players.Any(p => p.Id == playerId))
+        if (CurrentSession.Value.IsHost && CurrentSession.Value.Players.Any(p => p.Id == playerId))
         {
-            await CurrentSession.AsHost().RemovePlayerAsync(playerId);
+            await CurrentSession.Value.AsHost().RemovePlayerAsync(playerId);
         }
     }
 
     public void LaunchGame()
     {
-        if (CurrentSession.IsHost && CurrentSession.PlayerCount >= CurrentSession.MaxPlayers)
+        if (CurrentSession.Value.IsHost && CurrentSession.Value.PlayerCount >= CurrentSession.Value.MaxPlayers)
         {
             NetworkManager.Singleton.SceneManager.LoadScene("Gameplay", LoadSceneMode.Single);
         }
@@ -100,29 +104,54 @@ public class SessionServiceFacade
 
     private void SetCurrentSession(ISession session)
     {
-        if (CurrentSession == session) return;
-        
-        CurrentSession = session;
-        OnCurrentSessionChanged?.Invoke();
+        if (CurrentSession.Value == session) return;
 
-        if (CurrentSession != null)
-        {
-            CurrentSession.Changed += () => Debug.Log("[CurrentSession] Changed");
-            CurrentSession.StateChanged += (sessionState) => Debug.Log($"[CurrentSession] StateChanged : {sessionState}");
-            CurrentSession.PlayerJoined += (playerId) => Debug.Log($"[CurrentSession] PlayerJoined : {playerId}");
-            CurrentSession.PlayerLeaving += (playerId) => Debug.Log($"[CurrentSession] PlayerLeaving : {playerId}");
-            CurrentSession.PlayerHasLeft += (playerId) => Debug.Log($"[CurrentSession] PlayerHasLeft : {playerId}");
-            CurrentSession.SessionPropertiesChanged += () => Debug.Log("[CurrentSession] SessionPropertiesChanged");
-            CurrentSession.PlayerPropertiesChanged += () => Debug.Log("[CurrentSession] PlayerPropertiesChanged");
-            CurrentSession.RemovedFromSession += () =>
-            {
-                Debug.Log("[CurrentSession] RemovedFromSession");
-                SetCurrentSession(null);
-            };
-            CurrentSession.Deleted += () => Debug.Log("[CurrentSession] Deleted");
-            CurrentSession.SessionHostChanged += (playerId) => Debug.Log($"[CurrentSession] SessionHostChanged : {playerId}");
-        }
+        UnsubscribeFromJoinedSession();
+        
+        CurrentSession.Value = session;
+        
+        SubscribeToJoinedSession();
     }
+    
+    private void SubscribeToJoinedSession()
+    {
+        CurrentSession.Value.Changed += OnSessionChanged;
+        CurrentSession.Value.StateChanged += OnSessionStateChanged;
+        CurrentSession.Value.Deleted += OnSessionDeleted;
+        CurrentSession.Value.PlayerJoined += OnPlayerJoined;
+        CurrentSession.Value.PlayerHasLeft += OnPlayerHasLeft;
+        CurrentSession.Value.RemovedFromSession += OnRemovedFromSession;
+        CurrentSession.Value.PlayerPropertiesChanged += OnPlayerPropertiesChanged;
+        CurrentSession.Value.SessionPropertiesChanged += OnSessionPropertiesChanged;
+        CurrentSession.Value.SessionHostChanged += OnSessionHostChanged;
+    }
+
+    private void UnsubscribeFromJoinedSession()
+    {
+        CurrentSession.Value.Changed -= OnSessionChanged;
+        CurrentSession.Value.StateChanged -= OnSessionStateChanged;
+        CurrentSession.Value.Deleted -= OnSessionDeleted;
+        CurrentSession.Value.PlayerJoined -= OnPlayerJoined;
+        CurrentSession.Value.PlayerHasLeft -= OnPlayerHasLeft;
+        CurrentSession.Value.RemovedFromSession -= OnRemovedFromSession;
+        CurrentSession.Value.PlayerPropertiesChanged -= OnPlayerPropertiesChanged;
+        CurrentSession.Value.SessionPropertiesChanged -= OnSessionPropertiesChanged;
+        CurrentSession.Value.SessionHostChanged -= OnSessionHostChanged;
+    }
+    
+    private void OnSessionChanged() => Debug.Log("[CurrentSession] Changed");
+    private void OnSessionStateChanged(SessionState sessionState) => Debug.Log($"[CurrentSession] StateChanged : {sessionState}");
+    private void OnSessionDeleted() => Debug.Log("[CurrentSession] Deleted");
+    private void OnPlayerJoined(string playerId) => Debug.Log($"[CurrentSession] PlayerJoined : {playerId}");
+    private void OnPlayerHasLeft(string playerId) => Debug.Log($"[CurrentSession] PlayerHasLeft : {playerId}");
+    private void OnSessionPropertiesChanged() => Debug.Log("[CurrentSession] SessionPropertiesChanged");
+    private void OnPlayerPropertiesChanged() => Debug.Log("[CurrentSession] PlayerPropertiesChanged");
+    private void OnRemovedFromSession()
+    {
+        Debug.Log("[CurrentSession] RemovedFromSession");
+        SetCurrentSession(null);
+    }
+    private void OnSessionHostChanged(string playerId) => Debug.Log($"[CurrentSession] SessionHostChanged : {playerId}");
 
     private Dictionary<string, PlayerProperty> GetPlayerProperties()
     {

@@ -37,10 +37,11 @@ public class SessionViewerUI : MonoBehaviour
 
     private void Awake()
     {
-        _sessionServiceFacade.OnCurrentSessionChanged += SetCurrentSession;
+        _sessionServiceFacade.CurrentSession.OnValueChanged += SetCurrentSession;
         
         btnCreate.interactable = false;
-        inputFieldName.onValueChanged.AddListener(value => btnCreate.interactable = value.Length > 3);
+        inputFieldName.onValueChanged.AddListener(_ => ValidateCreateButton());
+        inputFieldPassword.onValueChanged.AddListener(_ => ValidateCreateButton());
         btnCreate.onClick.AddListener(CreateSession);
         
         btnLaunchGame.onClick.AddListener(LaunchGame);
@@ -51,6 +52,8 @@ public class SessionViewerUI : MonoBehaviour
     {
         ShowSessionListPanel();
     }
+
+    private void ValidateCreateButton() => btnCreate.interactable = inputFieldName.text.Length >= 4 && inputFieldPassword.text.Length is 0 or >= 8;
 
     private void ShowSessionListPanel()
     {
@@ -75,14 +78,14 @@ public class SessionViewerUI : MonoBehaviour
         }
     }
 
-    private void SetCurrentSession()
+    private void SetCurrentSession(ISession session)
     {
         if (_currentSession != null)
         {
             _currentSession.Changed -= RefreshPlayerList;
         }
         
-        _currentSession = _sessionServiceFacade.CurrentSession;
+        _currentSession = session;
         
         if (_currentSession != null)
         {
@@ -106,11 +109,11 @@ public class SessionViewerUI : MonoBehaviour
         foreach (Transform child in playerListContent.transform)
             Destroy(child.gameObject);
 
-        foreach (IReadOnlyPlayer player in _sessionServiceFacade.CurrentSession?.Players ?? new List<IReadOnlyPlayer>())
+        foreach (IReadOnlyPlayer player in _currentSession?.Players ?? new List<IReadOnlyPlayer>())
         {
             PlayerInfoUI instance = Instantiate(playerInfoUI, playerListContent.transform);
             GameObjectInjector.InjectObject(instance.gameObject, Container.ProjectContainer);
-            instance.SetInfo(player, _sessionServiceFacade.CurrentSession);
+            instance.SetInfo(player, _currentSession);
         }
     }
     
@@ -140,12 +143,12 @@ public class SessionViewerUI : MonoBehaviour
     
     private void CreateSession()
     {
-        _ = _sessionServiceFacade.CreateSessionAsHost(inputFieldName.text, inputFieldPassword.text, 2);
+        _ = _sessionServiceFacade.TryCreateSessionAsync(inputFieldName.text, inputFieldPassword.text, 2);
     }
 
     private void QuitSession()
     {
-        _ = _sessionServiceFacade.QuitSession();
+        _ = _sessionServiceFacade.LeaveSessionAsync();
     }
 
     private void LaunchGame()

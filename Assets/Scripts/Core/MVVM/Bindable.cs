@@ -1,9 +1,10 @@
 using System;
+using UnityEngine;
 
 [Serializable]
 public class Bindable<T>
 {
-    private T _value;
+    [SerializeField] private T value;
 
     /// <summary>
     /// Événement déclenché lorsque la valeur change.
@@ -15,7 +16,7 @@ public class Bindable<T>
     /// </summary>
     public Bindable()
     {
-        _value = default;
+        value = default;
     }
     
     /// <summary>
@@ -24,7 +25,7 @@ public class Bindable<T>
     /// <param name="initialValue">Valeur initiale.</param>
     public Bindable(T initialValue)
     {
-        _value = initialValue;
+        value = initialValue;
     }
     
     /// <summary>
@@ -33,7 +34,7 @@ public class Bindable<T>
     /// <param name="initialValue">Valeur initiale.</param>
     public Bindable(Bindable<T> initialValue)
     {
-        _value = initialValue.Value;
+        value = initialValue.Value;
     }
 
     /// <summary>
@@ -41,13 +42,13 @@ public class Bindable<T>
     /// </summary>
     public T Value
     {
-        get => _value;
+        get => value;
         set
         {
-            if (!Equals(_value, value))
+            if (!Equals(this.value, value))
             {
-                _value = value;
-                OnValueChanged?.Invoke(_value);
+                this.value = value;
+                OnValueChanged?.Invoke(this.value);
             }
         }
     }

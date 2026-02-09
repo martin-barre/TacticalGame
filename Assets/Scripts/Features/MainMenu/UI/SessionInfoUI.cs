@@ -21,6 +21,6 @@ public class SessionInfoUI : MonoBehaviour
 
     public void JoinSession()
     {
-        _ = _sessionServiceFacade.JoinSessionById(_sessionInfo.Id);
+        _ = _sessionServiceFacade.TryJoinSessionByIdAsync(_sessionInfo.Id);
     }
 }

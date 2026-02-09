@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class MainMenuController : MonoBehaviour
 {
-    [Inject] private readonly AuthenticationServiceFacade _authenticationServiceFacade;
+    [Inject] private readonly AuthServiceFacade _authServiceFacade;
     
     private void Awake()
     {
@@ -16,7 +16,7 @@ public class MainMenuController : MonoBehaviour
     {
         try
         {
-            await _authenticationServiceFacade.InitializeAndSignInAsync();
+            await _authServiceFacade.InitializeAndSignInAsync();
             Debug.Log($"Signed in. Unity Player ID {AuthenticationService.Instance.PlayerId}");
         }
         catch (Exception)
