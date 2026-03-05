@@ -164,7 +164,7 @@ public static class AiManager
             case AiBehaviorType.Aggressive:
                 // Prefer being close (0 distance is best)
                 // Score decreases as distance increases
-                return -distance * 10; 
+                return -distance * 2; 
 
             case AiBehaviorType.Distance:
                 // Prefer keeping a safe range (e.g., 4-6 cells)
@@ -172,11 +172,11 @@ public static class AiManager
                 // If too far (>7), penalty.
                 int optimalRange = 5;
                 int diff = Mathf.Abs(distance - optimalRange);
-                return -diff * 8;
+                return -diff * 1;
 
             case AiBehaviorType.Support:
                 // Prefer being close to allies
-                return -distance * 10;
+                return -distance * 2;
 
             default:
                 return 0;
