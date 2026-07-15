@@ -300,6 +300,7 @@ MonoBehaviour:
     Address: 127.0.0.1
     Port: 7777
     ServerListenAddress: 127.0.0.1
+    ClientBindPort: 0
   DebugSimulator:
     PacketDelayMS: 0
     PacketJitterMS: 0
@@ -415,7 +416,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 2070473493}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ebaaf20ce03e43ed8eb29745f2b303a9, type: 3}
+  m_Script: {fileID: 11500000, guid: 82f5852722bc21744a6d483e1604dc92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ApplicationController
   sceneNameToLoad: MainMenu

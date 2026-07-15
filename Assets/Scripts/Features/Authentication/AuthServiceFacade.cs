@@ -30,7 +30,7 @@ public class AuthServiceFacade
             await AuthenticationService.Instance.UpdatePlayerNameAsync("Guest");
             return true;
         }
-        catch (AuthenticationException e)
+        catch
         {
             return false;
         }
