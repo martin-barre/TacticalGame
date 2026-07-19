@@ -31,15 +31,11 @@ public interface ISessionPlayerData
 /// <typeparam name="T"></typeparam>
 public class SessionManager<T> where T : struct, ISessionPlayerData
 {
-    private SessionManager()
+    public SessionManager()
     {
         _clientData = new Dictionary<string, T>();
         _clientIDToPlayerId = new Dictionary<ulong, string>();
     }
-
-    public static SessionManager<T> Instance => _instance ??= new SessionManager<T>();
-
-    private static SessionManager<T> _instance;
 
     /// <summary>
     /// Maps a given client player id to the data for a given client player.

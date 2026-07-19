@@ -1,4 +1,4 @@
-using Reflex.Attributes;
+using VContainer;
 using TMPro;
 using Unity.Services.Multiplayer;
 using UnityEngine;
@@ -8,7 +8,7 @@ public class SessionInfoUI : MonoBehaviour
     [SerializeField] private TMP_Text textName;
     [SerializeField] private TMP_Text textPlayerCount;
     
-    [Inject] private readonly SessionServiceFacade _sessionServiceFacade;
+    [Inject] private ISessionServiceFacade _sessionServiceFacade;
     
     private ISessionInfo _sessionInfo;
 

@@ -1,13 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Reflex.Attributes;
-using Reflex.Core;
-using Reflex.Injectors;
 using TMPro;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.UI;
+using VContainer;
+using VContainer.Unity;
 
 public class SessionViewerUI : MonoBehaviour
 {
@@ -30,11 +29,12 @@ public class SessionViewerUI : MonoBehaviour
     [SerializeField] private Button btnLaunchGame;
     [SerializeField] private Button btnQuitSession;
 
-    [Inject] private readonly SessionServiceFacade _sessionServiceFacade;
+    [Inject] private ISessionServiceFacade _sessionServiceFacade;
+    [Inject] private IObjectResolver _resolver;
     
     private ISession _currentSession;
     private Coroutine _coroutineRefreshSessionList;
-
+    
     private void Awake()
     {
         _sessionServiceFacade.CurrentSession.OnValueChanged += SetCurrentSession;
@@ -112,7 +112,7 @@ public class SessionViewerUI : MonoBehaviour
         foreach (IReadOnlyPlayer player in _currentSession?.Players ?? new List<IReadOnlyPlayer>())
         {
             PlayerInfoUI instance = Instantiate(playerInfoUI, playerListContent.transform);
-            GameObjectInjector.InjectObject(instance.gameObject, Container.ProjectContainer);
+            _resolver.InjectGameObject(instance.gameObject);
             instance.SetInfo(player, _currentSession);
         }
     }
@@ -133,7 +133,7 @@ public class SessionViewerUI : MonoBehaviour
             foreach (ISessionInfo sessionInfo in sessionInfos)
             {
                 SessionInfoUI instance = Instantiate(sessionInfoUI, sessionListContent.transform);
-                GameObjectInjector.InjectObject(instance.gameObject, Container.ProjectContainer);
+                _resolver.InjectGameObject(instance.gameObject);
                 instance.SetInfo(sessionInfo);
             }
 

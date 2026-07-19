@@ -1,4 +1,4 @@
-using Reflex.Attributes;
+using VContainer;
 using TMPro;
 using Unity.Services.Multiplayer;
 using UnityEngine;
@@ -10,7 +10,7 @@ public class PlayerInfoUI : MonoBehaviour
     [SerializeField] private TMP_Text textName;
     [SerializeField] private Button btnRemove;
 
-    [Inject] private readonly SessionServiceFacade _sessionServiceFacade;
+    [Inject] private ISessionServiceFacade _sessionServiceFacade;
     
     private IReadOnlyPlayer _player;
     

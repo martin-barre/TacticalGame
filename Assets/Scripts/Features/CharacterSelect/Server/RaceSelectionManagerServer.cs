@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using VContainer;
 using Unity.Netcode;
 using Unity.Collections;
 using UnityEngine.SceneManagement;
@@ -8,6 +9,7 @@ public class RaceSelectionManagerServer : NetworkSingleton<RaceSelectionManagerS
     private const int MaxCharacters = 3;
     
     private readonly Dictionary<ulong, RaceSelectionState> _playerSelections = new();
+    [Inject] private SessionManager<SessionPlayerData> _sessionManager;
     
     public override void OnNetworkSpawn()
     {
@@ -38,15 +40,13 @@ public class RaceSelectionManagerServer : NetworkSingleton<RaceSelectionManagerS
             state = new RaceSelectionState
             {
                 ClientId = sender,
-                CharacterIds = new List<int>(),
-                IsLockedIn = false
+                CharacterIds = new List<int>()
             };
         }
 
         if (state.CharacterIds.Count < MaxCharacters && !state.CharacterIds.Contains(characterId))
         {
             state.CharacterIds.Add(characterId);
-            state.IsLockedIn = false;
             _playerSelections[sender] = state;
             UpdateClients();
         }
@@ -68,26 +68,8 @@ public class RaceSelectionManagerServer : NetworkSingleton<RaceSelectionManagerS
             }
         }
 
-        state.IsLockedIn = false;
         _playerSelections[sender] = state;
         UpdateClients();
-    }
-
-    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-    public void LockInSelectionRpc(RpcParams rpcParams = default)
-    {
-        ulong sender = rpcParams.Receive.SenderClientId;
-        if (_playerSelections.TryGetValue(sender, out RaceSelectionState state))
-        {
-            if (state.CharacterIds.Count == MaxCharacters) // lock uniquement si complet
-            {
-                state.IsLockedIn = true;
-                _playerSelections[sender] = state;
-                UpdateClients();
-            }
-        }
-
-        // Option : vérifier si tous les joueurs sont lock-in pour passer à la scène suivante.
     }
 
     // --- Broadcast vers clients ---
@@ -100,10 +82,10 @@ public class RaceSelectionManagerServer : NetworkSingleton<RaceSelectionManagerS
         {
             foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
             {
-                SessionPlayerData? playerData = SessionManager<SessionPlayerData>.Instance.GetPlayerData(clientId);
+                SessionPlayerData? playerData = _sessionManager.GetPlayerData(clientId);
                 if (playerData != null)
                 {
-                    SessionManager<SessionPlayerData>.Instance.SetPlayerData(clientId, new SessionPlayerData
+                    _sessionManager.SetPlayerData(clientId, new SessionPlayerData
                     {
                         ClientID = playerData.Value.ClientID,
                         IsConnected = playerData.Value.IsConnected,
@@ -112,7 +94,7 @@ public class RaceSelectionManagerServer : NetworkSingleton<RaceSelectionManagerS
                     });
                 }
             }
-            SessionManager<SessionPlayerData>.Instance.OnSessionStarted();
+            _sessionManager.OnSessionStarted();
             NetworkManager.Singleton.SceneManager.LoadScene("Gameplay", LoadSceneMode.Single);
         }
     }

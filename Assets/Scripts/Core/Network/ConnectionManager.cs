@@ -1,11 +1,14 @@
 using System;
 using System.Text;
+using VContainer;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class ConnectionManager : MonoBehaviour
 {
+    [Inject] private SessionManager<SessionPlayerData> _sessionManager;
+
     private void Awake()
     {
         NetworkManager.Singleton.OnServerStarted += OnServerStartedCallback;
@@ -45,27 +48,27 @@ public class ConnectionManager : MonoBehaviour
             ConnectionEvent.ClientConnected => "Client connected",
             ConnectionEvent.ClientDisconnected => "Client disconnected",
             ConnectionEvent.PeerConnected => "Peer connected",
-            ConnectionEvent.PeerDisconnected => "Peer connected",
+            ConnectionEvent.PeerDisconnected => "Peer disconnected",
             _ => throw new ArgumentOutOfRangeException()
         };
         Debug.Log($"[NetworkSetup] OnConnectionEventCallback -> {message} with id {connectionEventData.ClientId}.");
     }
     
-    private static void ApprovalCheckCallback(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
+    private void ApprovalCheckCallback(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
     {
         byte[] payload = request.Payload;
         string playerId = Encoding.UTF8.GetString(payload);
         
         Debug.Log($"[NetworkSetup] ConnectionApproval -> Receive connection request with PlayerID : {playerId}.");
         
-        if (SessionManager<SessionPlayerData>.Instance.IsDuplicateConnection(playerId))
+        if (_sessionManager.IsDuplicateConnection(playerId))
         {
             response.Approved = false;
             response.Reason = "This player is already connected.";
             return;
         }
 
-        SessionManager<SessionPlayerData>.Instance.SetupConnectingPlayerSessionData(request.ClientNetworkId, playerId, new SessionPlayerData
+        _sessionManager.SetupConnectingPlayerSessionData(request.ClientNetworkId, playerId, new SessionPlayerData
         {
             ClientID = request.ClientNetworkId,
             IsConnected = true

@@ -1,11 +1,11 @@
 using System;
-using Reflex.Attributes;
+using VContainer;
 using Unity.Services.Authentication;
 using UnityEngine;
 
 public class MainMenuController : MonoBehaviour
 {
-    [Inject] private readonly AuthServiceFacade _authServiceFacade;
+    [Inject] private IAuthServiceFacade _authServiceFacade;
     
     private void Awake()
     {

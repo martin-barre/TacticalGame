@@ -5,15 +5,23 @@ public class RaceSelectionManagerClient : NetworkSingleton<RaceSelectionManagerC
     [SerializeField] private RaceSelectionUI ui;
 
     public void UpdateSelectionUI(RaceSelectionState[] states)
-    {
-        ui.UpdateInfo(states);
+              {
+                  ui.UpdateInfo(states);
     }
 
-    public void LockIn()
+    public void RequestAddCharacter(int characterId)
     {
         if (IsClient)
         {
-            RaceSelectionManagerServer.Instance.LockInSelectionRpc();
+            RaceSelectionManagerServer.Instance.RequestAddCharacterRpc(characterId);
+        }
+    }
+
+    public void RequestRemoveCharacter(int characterId)
+    {
+        if (IsClient)
+        {
+            RaceSelectionManagerServer.Instance.RequestRemoveCharacterRpc(characterId);
         }
     }
 }

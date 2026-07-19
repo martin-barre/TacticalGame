@@ -1,17 +1,29 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MessagePack;
+using VContainer;
 using Unity.Netcode;
+using UnityEngine;
 
-public class ActionResultSender : NetworkSingleton<ActionResultSender>
+public class ActionResultSender : NetworkBehaviour
 {
     private readonly Queue<IPacket[]> _bufferPackets = new();
     private bool _isProcessing;
 
+    [Inject] private GameplayClientState _clientState;
+    [Inject] private InteractionManager _interactionManager;
+    [Inject] private GameManagerClient _gameManagerClient;
+
     private void Update()
     {
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsClient)
+        {
+            return;
+        }
+
         if (!_isProcessing && _bufferPackets.Count > 0)
         {
             StartCoroutine(ApplyPacketsCoroutine(_bufferPackets.Dequeue()));
@@ -35,23 +47,38 @@ public class ActionResultSender : NetworkSingleton<ActionResultSender>
     [ClientRpc]
     public void SendTeamClientRpc(Team team, ClientRpcParams _ = default)
     {
-        GameManagerClient.Instance.Team = team;
+        _clientState.Team = team;
     }
 
     private IEnumerator ApplyPacketsCoroutine(IPacket[] packets)
     {
         _isProcessing = true;
-        foreach (IPacket packet in packets)
+        try
         {
-            packet.Apply(GameManagerClient.Instance.GameState, GameManagerClient.Instance.Map);
-            Task task = GameManagerClient.Instance.PacketRendererRegistry.RenderAsync(packet);
-            while (!task.IsCompleted) yield return null;
+            foreach (IPacket packet in packets)
+            {
+                Task task;
+                try
+                {
+                    packet.Apply(_clientState.GameState, _clientState.Map);
+                    task = _clientState.PacketRendererRegistry.RenderAsync(packet);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                    continue;
+                }
+                while (!task.IsCompleted) yield return null;
+            }
         }
-        _isProcessing = false;
-
-        if (GameManagerClient.Instance.Team != null && GameManagerClient.Instance.GameState.Entities.Any())
+        finally
         {
-            InteractionManager.Instance.DisplayMovementNode();
+            _isProcessing = false;
+        }
+
+        if (_clientState.Team != null && _clientState.GameState.Entities.Any())
+        {
+            _interactionManager.DisplayMovementNode();
         }
     }
 }

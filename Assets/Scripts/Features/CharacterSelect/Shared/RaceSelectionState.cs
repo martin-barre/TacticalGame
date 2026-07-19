@@ -5,13 +5,11 @@ public struct RaceSelectionState : INetworkSerializable
 {
     public ulong ClientId;
     public List<int> CharacterIds;
-    public bool IsLockedIn;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref ClientId);
-        serializer.SerializeValue(ref IsLockedIn);
-        
+
         int count = CharacterIds?.Count ?? 0;
         serializer.SerializeValue(ref count);
 
