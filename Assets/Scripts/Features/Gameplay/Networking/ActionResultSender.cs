@@ -1,84 +1,73 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using MessagePack;
-using VContainer;
 using Unity.Netcode;
-using UnityEngine;
+using VContainer;
+
+public class PacketsNetwork
+{
+    public IPacket[] Packets { get; set; }
+    public ulong? TargetClientId { get; set; }
+}
 
 public class ActionResultSender : NetworkBehaviour
 {
-    private readonly Queue<IPacket[]> _bufferPackets = new();
-    private bool _isProcessing;
+    [Inject] private ISubscriber<PacketsNetwork> _packetsSubscriber;
+    [Inject] private IPublisher<IPacket[]> _packetsReceivedPublisher;
+    [Inject] private ISubscriber<TeamNetwork> _teamSubscriber;
+    [Inject] private IPublisher<Team> _teamReceivedPublisher;
 
-    [Inject] private GameplayClientState _clientState;
-    [Inject] private InteractionManager _interactionManager;
-    [Inject] private GameManagerClient _gameManagerClient;
+    private IDisposable _packetsSubscription;
+    private IDisposable _teamSubscription;
 
-    private void Update()
+    public override void OnNetworkSpawn()
     {
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsClient)
-        {
-            return;
-        }
+        _packetsSubscription = _packetsSubscriber.Subscribe(OnPacketsNetwork);
+        _teamSubscription = _teamSubscriber.Subscribe(OnTeamNetwork);
+    }
 
-        if (!_isProcessing && _bufferPackets.Count > 0)
+    public override void OnNetworkDespawn()
+    {
+        _packetsSubscription?.Dispose();
+        _packetsSubscription = null;
+        _teamSubscription?.Dispose();
+        _teamSubscription = null;
+    }
+
+    private void OnPacketsNetwork(PacketsNetwork packetsNetwork)
+    {
+        byte[] payload = MessagePackSerializer.Serialize(packetsNetwork.Packets);
+        if (packetsNetwork.TargetClientId.HasValue)
         {
-            StartCoroutine(ApplyPacketsCoroutine(_bufferPackets.Dequeue()));
+            SendPacketsClientRpc(payload, new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams { TargetClientIds = new[] { packetsNetwork.TargetClientId.Value } }
+            });
+        }
+        else
+        {
+            SendPacketsClientRpc(payload);
         }
     }
 
-    [ClientRpc]
-    public void SendPacketClientRpc(byte[] serializedPacket, ClientRpcParams _ = default)
+    private void OnTeamNetwork(TeamNetwork teamNetwork)
     {
-        IPacket packet = MessagePackSerializer.Deserialize<IPacket>(serializedPacket);
-        _bufferPackets.Enqueue(new []{ packet });
+        SendTeamClientRpc(teamNetwork.Team, new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams { TargetClientIds = new[] { teamNetwork.TargetClientId } }
+        });
     }
-    
+
     [ClientRpc]
-    public void SendPacketsClientRpc(byte[] serializedPackets, ClientRpcParams _ = default)
+    private void SendPacketsClientRpc(byte[] serializedPackets, ClientRpcParams _ = default)
     {
         IPacket[] packets = MessagePackSerializer.Deserialize<IPacket[]>(serializedPackets);
-        _bufferPackets.Enqueue(packets);
+        _packetsReceivedPublisher.Publish(packets);
     }
-    
+
     [ClientRpc]
-    public void SendTeamClientRpc(Team team, ClientRpcParams _ = default)
+    private void SendTeamClientRpc(Team team, ClientRpcParams _ = default)
     {
-        _clientState.Team = team;
-    }
-
-    private IEnumerator ApplyPacketsCoroutine(IPacket[] packets)
-    {
-        _isProcessing = true;
-        try
-        {
-            foreach (IPacket packet in packets)
-            {
-                Task task;
-                try
-                {
-                    packet.Apply(_clientState.GameState, _clientState.Map);
-                    task = _clientState.PacketRendererRegistry.RenderAsync(packet);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogException(e);
-                    continue;
-                }
-                while (!task.IsCompleted) yield return null;
-            }
-        }
-        finally
-        {
-            _isProcessing = false;
-        }
-
-        if (_clientState.Team != null && _clientState.GameState.Entities.Any())
-        {
-            _interactionManager.DisplayMovementNode();
-        }
+        _teamReceivedPublisher.Publish(team);
     }
 }

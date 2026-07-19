@@ -17,7 +17,7 @@ public class InteractionManager : ClientStateBoundBehaviour
     private GameStateViewModel _gameStateViewModel;
 
     [Inject] private MapManager _mapManager;
-    [Inject] private ActionRequestSender _actionRequestSender;
+    [Inject] private IPublisher<IGameplayCommand> _gameplayCommandsReceivedPublisher;
 
     protected override void BindClientState()
     {
@@ -65,7 +65,11 @@ public class InteractionManager : ClientStateBoundBehaviour
             {
                 if (_activeNodes.Contains(node)) // SI JE CLICK SUR UNE CASE ACTIVE -> LANCE LE SORT
                 {
-                    _actionRequestSender.LaunchSpellRpc(_selectedSpell.Id, node.GridPosition);
+                    _gameplayCommandsReceivedPublisher.Publish(new GameplayCommandLaunchSpell
+                    {
+                        SpellId = _selectedSpell.Id,
+                        Position = node.GridPosition
+                    });
                     _selectedSpell = null;
                     _mapManager.SetSelectableCells();
                     _mapManager.SetBlockedCells();
@@ -75,7 +79,10 @@ public class InteractionManager : ClientStateBoundBehaviour
             {
                 if (_activeNodes.Contains(node)) // SI JE CLICK SUR UNE CASE ACTIVE -> DEPLACE LE JOUEUR
                 {
-                    _actionRequestSender.MoveRpc(node.GridPosition);
+                    _gameplayCommandsReceivedPublisher.Publish(new GameplayCommandMove
+                    {
+                        Position = node.GridPosition
+                    });
                 }
             }
             DisplayMovementNode();
@@ -154,6 +161,7 @@ public class InteractionManager : ClientStateBoundBehaviour
         _selectedSpell = spell;
         _activeNodes = FOV.GetDisplacement(entity, _selectedSpell, ClientState.GameState, ClientState.Map);
 
+        if (_selectedSpell.xRay) _unselectableNodes.Clear();
         if (_selectedSpell.xRay) _unselectableNodes.Clear();
         else _unselectableNodes = FOV.GetDisplacement(entity, _selectedSpell, ClientState.GameState, ClientState.Map, true);
 

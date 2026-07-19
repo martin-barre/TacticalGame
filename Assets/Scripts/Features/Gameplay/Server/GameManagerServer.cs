@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MessagePack;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -10,7 +9,8 @@ public class GameManagerServer
     private readonly MapManager _mapManager;
     private readonly SessionManager<SessionPlayerData> _sessionManager;
     private readonly GameplayServerState _serverState;
-    private readonly ActionResultSender _actionResultSender;
+    private readonly IPublisher<PacketsNetwork> _packetsNetworkPublisher;
+    private readonly IPublisher<TeamNetwork> _teamNetworkPublisher;
 
     public GameState GameState => _serverState.GameState;
     public Map Map => _serverState.Map;
@@ -19,12 +19,14 @@ public class GameManagerServer
         MapManager mapManager,
         SessionManager<SessionPlayerData> sessionManager,
         GameplayServerState serverState,
-        ActionResultSender actionResultSender)
+        IPublisher<PacketsNetwork> packetsNetworkPublisher,
+        IPublisher<TeamNetwork> teamNetworkPublisher)
     {
         _mapManager = mapManager;
         _sessionManager = sessionManager;
         _serverState = serverState;
-        _actionResultSender = actionResultSender;
+        _packetsNetworkPublisher = packetsNetworkPublisher;
+        _teamNetworkPublisher = teamNetworkPublisher;
 
         _serverState.Map = _mapManager.Current;
         _serverState.GameState = new GameState
@@ -103,14 +105,16 @@ public class GameManagerServer
             CurrentPlayer = GameState.CurrentEntityIndex
         };
         effects.Add(packetSetGameLogic);
-        
-        _actionResultSender.SendPacketsClientRpc(MessagePackSerializer.Serialize(effects), new ClientRpcParams
+
+        _packetsNetworkPublisher.Publish(new PacketsNetwork
         {
-            Send = new ClientRpcSendParams { TargetClientIds = new[] { clientId } }
+            Packets = effects.ToArray(),
+            TargetClientId = clientId
         });
-        _actionResultSender.SendTeamClientRpc(sessionData.Value.Team, new ClientRpcParams
+        _teamNetworkPublisher.Publish(new TeamNetwork
         {
-            Send = new ClientRpcSendParams { TargetClientIds = new[] { clientId } }
+            Team = sessionData.Value.Team,
+            TargetClientId = clientId
         });
     }
 
@@ -124,7 +128,10 @@ public class GameManagerServer
         while(!GameState.CurrentEntity.IsPlayer)
         {
             List<IPacket> clientEffects = AiManager.PlayOnAction(GameState.CurrentEntity, GameState, Map, AiBehaviorType.Aggressive);
-            _actionResultSender.SendPacketsClientRpc(MessagePackSerializer.Serialize(clientEffects));
+            _packetsNetworkPublisher.Publish(new PacketsNetwork
+            {
+                Packets = clientEffects.ToArray()
+            });
         }
 
         return Task.CompletedTask;

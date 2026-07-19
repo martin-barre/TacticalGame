@@ -6,11 +6,11 @@ public class BtnNextTurnUI : MonoBehaviour
 {
     [SerializeField] private Button btnNextTurn;
 
-    [Inject] private ActionRequestSender _actionRequestSender;
+    [Inject] private IPublisher<IGameplayCommand> _gameplayCommandsReceivedPublisher;
 
     private void Start()
     {
-        btnNextTurn.onClick.AddListener(() => _actionRequestSender.NextTurnRpc());
+        btnNextTurn.onClick.AddListener(() => _gameplayCommandsReceivedPublisher.Publish(new GameplayCommandNextTurn()));
     }
 
     private void OnDestroy()

@@ -17,6 +17,7 @@ public class TimelineUI : ClientStateBoundBehaviour
         _gameStateViewModel = ViewModelFactory.Game.GetOrCreate(ClientState.GameState);
         _gameStateViewModel.CurrentEntityIndex.OnValueChanged += OnCurrentEntityIndexChanged;
         _gameStateViewModel.Entities.OnListChanged += OnEntitiesChanged;
+        OnEntitiesChanged();
     }
 
     protected override void OnDestroy()

@@ -9,10 +9,13 @@ public struct PacketKillEntity : IPacket
     
     private List<Entity> _entities;
     private int _currentEntityIndex;
-    
+
+    [IgnoreMember] public Entity RemovedEntity { get; private set; }
+
     public void Apply(GameState state, Map map)
     {
         Entity entity = state.GetEntityById(TargetId);
+        RemovedEntity = entity;
 
         _entities = state.Entities.Select(e => e.Clone()).ToList();
         _currentEntityIndex = state.CurrentEntityIndex;

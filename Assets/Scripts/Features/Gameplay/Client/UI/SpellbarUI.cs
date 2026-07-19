@@ -14,6 +14,8 @@ public class SpellbarUI : ClientStateBoundBehaviour
     {
         _gameStateViewModel = ViewModelFactory.Game.GetOrCreate(ClientState.GameState);
         _gameStateViewModel.CurrentEntityIndex.OnValueChanged += SetUI;
+        ClientState.TeamAssigned += OnTeamAssigned;
+        SetUI(_gameStateViewModel.CurrentEntityIndex.Value);
     }
 
     protected override void OnDestroy()
@@ -23,7 +25,10 @@ public class SpellbarUI : ClientStateBoundBehaviour
         {
             _gameStateViewModel.CurrentEntityIndex.OnValueChanged -= SetUI;
         }
+        ClientState.TeamAssigned -= OnTeamAssigned;
     }
+
+    private void OnTeamAssigned() => SetUI(_gameStateViewModel.CurrentEntityIndex.Value);
 
     private void SetUI(int playerId)
     {

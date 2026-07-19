@@ -21,10 +21,22 @@ public class GameplayClientState
 
     public event Action<string> OnChatMessage;
     public event Action Initialized;
+    public event Action TeamAssigned;
 
     public GameState GameState { get; private set; }
     public Map Map { get; private set; }
-    public Team? Team { get; set; }
+
+    private Team? _team;
+    public Team? Team
+    {
+        get => _team;
+        set
+        {
+            _team = value;
+            TeamAssigned?.Invoke();
+        }
+    }
+
     public PacketRendererRegistry PacketRendererRegistry { get; }
     public bool IsInitialized { get; private set; }
 

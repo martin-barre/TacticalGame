@@ -29,4 +29,9 @@ public class EntityPrefabController : MonoBehaviour
     {
         _pendingAnimation = false;
     }
+
+    public void Destroy()
+    {
+        Destroy(gameObject);
+    }
 }

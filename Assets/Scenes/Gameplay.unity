@@ -306,7 +306,9 @@ MonoBehaviour:
   parentReference:
     TypeName: 
   autoRun: 1
-  autoInjectGameObjects: []
+  autoInjectGameObjects:
+  - {fileID: 5276701061306905452}
+  - {fileID: 9133032557635475945}
   mapManager: {fileID: 1413688331}
   actionRequestSender: {fileID: 976878950703915360}
   actionResultSender: {fileID: 2479416293938209404}
